@@ -15,6 +15,9 @@
             n.novel_url    AS novelUrl,
             n.word_count   AS wordCount,
             n.status       AS status,
+            -- IFNULL 保证 NULL 字段也返回 key(空字符串),前端无需可选链
+            IFNULL(n.description, '') AS description,
+            IFNULL(n.tags, '')        AS tags,
             n.first_seen   AS firstSeen,
             n.last_crawl_time AS lastCrawlTime
         FROM novel n

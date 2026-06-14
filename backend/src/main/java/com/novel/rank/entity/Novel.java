@@ -20,6 +20,7 @@ public class Novel {
     private Integer wordCount;
     private String status;
     private String description;
+    private String tags;   // rich-crawler-data: 逗号分隔标签 (2-8 个)
     private LocalDateTime firstSeen;
     private LocalDateTime lastCrawlTime;
     private LocalDateTime createdAt;
@@ -47,6 +48,8 @@ public class Novel {
     public void setStatus(String status) { this.status = status; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getTags() { return tags; }
+    public void setTags(String tags) { this.tags = tags; }
     public LocalDateTime getFirstSeen() { return firstSeen; }
     public void setFirstSeen(LocalDateTime firstSeen) { this.firstSeen = firstSeen; }
     public LocalDateTime getLastCrawlTime() { return lastCrawlTime; }

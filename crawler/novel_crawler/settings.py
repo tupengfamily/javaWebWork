@@ -29,6 +29,12 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429]
 DOWNLOAD_DELAY = 2.0
 RANDOMIZE_DOWNLOAD_DELAY = True  # 0.5*delay ~ 1.5*delay
 
+# 自动限速(根据响应时间动态调整,降低被封概率)
+# rich-crawler-data 引入分页后,启用 AUTOTHROTTLE 进一步保护
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.5
+AUTOTHROTTLE_DEBUG = False
+
 # 默认请求头(补全浏览器特征)
 DEFAULT_REQUEST_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",

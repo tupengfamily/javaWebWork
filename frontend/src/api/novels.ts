@@ -12,6 +12,8 @@ export interface NovelVO {
   novelUrl: string
   wordCount: number
   status: string
+  description: string      // rich-crawler-data: 简介
+  tags: string             // rich-crawler-data: 逗号分隔标签
   firstSeen: string
   lastCrawlTime: string
 }

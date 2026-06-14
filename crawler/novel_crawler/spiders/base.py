@@ -97,6 +97,9 @@ class BaseSpider(scrapy.Spider):
     # ---- "all" 模式下要爬取的子榜单类型列表(子类可覆盖) ----
     ALL_RANKING_TYPES: list[str] = ["daily", "monthly", "total"]
 
+    # ---- 分页:每个榜单默认翻 2 页(20→40 本/次),命令行 -a pages=N 可覆盖 ----
+    pages: int = 2
+
     # ---- 反爬敏感页面的常见字符串(如果返回这些,说明被反爬了) ----
     _ANTI_BOT_MARKERS = [
         "验证", "verify", "captcha", "拦截", "blocked",
@@ -220,3 +223,123 @@ class BaseSpider(scrapy.Spider):
             "剧本": "juben",
         }
         return _MAP.get(cn.strip(), "")
+
+    # ============================================================
+    # description / tags 抽取(子类 parse_detail 调用)
+    # ============================================================
+    def make_description(self, response, selectors: list[str] | None = None) -> str:
+        """从详情页抽取 description(简介)
+
+        子类可覆盖 selectors 自定义;默认 5 个常见节点。
+        返回值 .strip() 后截断到 1000 字符。
+        """
+        if selectors is None:
+            selectors = [
+                "meta[name='description']::attr(content)",
+                ".book-intro::text",
+                ".intro::text",
+                "#book-intro::text",
+                ".book-desc::text",
+            ]
+        text = ""
+        for sel in selectors:
+            v = response.css(sel).get()
+            if v and v.strip():
+                text = v.strip()
+                break
+        # 去除多余空白 + 截断
+        text = re.sub(r"\s+", " ", text).strip()
+        return text[:1000]
+
+    def make_tags(self, response, selectors: list[str] | None = None, max_n: int = 8) -> str:
+        """从详情页抽取 tags(逗号分隔字符串)
+
+        子类可覆盖 selectors。最多 max_n 个,过滤空值 / emoji / 纯标点。
+        """
+        if selectors is None:
+            selectors = [
+                ".tag a::text",
+                ".book-tag span::text",
+                ".book-tag a::text",
+                ".labels a::text",
+                ".tag-list .tag::text",
+            ]
+        items: list[str] = []
+        for sel in selectors:
+            for v in response.css(sel).getall():
+                v = v.strip()
+                if not v:
+                    continue
+                # 过滤特殊字符 / emoji,仅保留中英数与逗号
+                v = re.sub(r"[^\w\u4e00-\u9fff,]", "", v)
+                if v and v not in items:
+                    items.append(v)
+                if len(items) >= max_n:
+                    break
+            if len(items) >= max_n:
+                break
+        return ",".join(items)
+
+    # ============================================================
+    # 分页 URL 助手
+    # ============================================================
+    def build_rank_requests(
+        self,
+        rank_paths: dict[str, str],
+        base_url: str = "",
+        callback=None,
+        meta_extra: dict | None = None,
+    ):
+        """根据 `pages` 构造 N 个 Request(N = self.pages)
+
+        用法 (在 spider.start() 内):
+            for rt in self.iter_all_types():
+                yield from self.build_rank_requests(
+                    self._RANK_PATHS,
+                    base_url="https://www.qidian.com",
+                    callback=self.parse,
+                    meta_extra={"ranking_type": rt},
+                )
+        """
+        from scrapy import Request
+        if callback is None:
+            callback = self.parse
+        for rt in self.iter_all_types():
+            path = rank_paths.get(rt)
+            if not path:
+                self.logger.warning(
+                    f"{self.site_code} 无榜单 {rt} 的 path 映射,跳过"
+                )
+                continue
+            for page in range(1, max(1, int(self.pages)) + 1):
+                # 拼分页:基础 URL + path + ?page=N (或路径分页)
+                if "{page}" in path:
+                    url = (base_url + path).format(page=page)
+                else:
+                    sep = "&" if "?" in path else "?"
+                    url = f"{base_url}{path}{sep}page={page}"
+                meta = {"ranking_type": rt, "page": page}
+                if meta_extra:
+                    meta.update(meta_extra)
+                yield Request(
+                    url,
+                    callback=callback,
+                    meta=meta,
+                    dont_filter=True,
+                )
+
+    def is_404_page(self, response) -> bool:
+        """检测返回 200 但内容是 404 错误页(SPA / Nuxt SSR 常见)
+
+        起点 / 番茄 / 纵横 部分站点的 404 仍返回 200,body 含特定标记。
+        """
+        body = response.text or ""
+        markers = ["err_404page", "page-not-found", "404", "页面不存在", "Not Found"]
+        # 排除正文里"404"作为标题的合法页(如完结字数 404 万字不算)
+        if any(m in body[:5000] for m in markers[:2]):  # err_404page / page-not-found
+            return True
+        # 4 类:在 title 标签里出现"404 / 页面不存在" 即判定
+        title = response.css("title::text").get() or ""
+        if "404" in title or "页面不存在" in title or "Not Found" in title:
+            return True
+        return False

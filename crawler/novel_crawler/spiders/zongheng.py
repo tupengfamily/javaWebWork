@@ -46,30 +46,75 @@ class ZonghengSpider(BaseSpider):
     ]
 
     # API 兜底
+    # rich-crawler-data: 新增 yuepiao / subscribe / newbook 3 种榜单
     _API_MAPS = {
-        "daily":   "https://www.zongheng.com/api/rank?type=daily",
-        "monthly": "https://www.zongheng.com/api/rank?type=monthly",
-        "total":   "https://www.zongheng.com/api/rank?type=total",
+        "daily":     "https://www.zongheng.com/api/rank?type=daily",
+        "monthly":   "https://www.zongheng.com/api/rank?type=monthly",
+        "total":     "https://www.zongheng.com/api/rank?type=total",
+        "yuepiao":   "https://www.zongheng.com/api/rank?type=yuepiao",
+        "subscribe": "https://www.zongheng.com/api/rank?type=subscribe",
+        "newbook":   "https://www.zongheng.com/api/rank?type=newbook",
     }
     # HTML URL
+    # 注意:rich-crawler-data spike 显示 /rank/newbook.html 返回 200 但内容是 404 错误页(Nuxt SSR fallback)
+    # spider.parse 内有 is_404_page 兜底,直接跳过
     _HTML_URLS = {
-        "daily":   "https://www.zongheng.com/rank/daily.html",
-        "monthly": "https://www.zongheng.com/rank/monthly.html",
-        "total":   "https://www.zongheng.com/rank/total.html",
+        "daily":     "https://www.zongheng.com/rank/daily.html",
+        "monthly":   "https://www.zongheng.com/rank/monthly.html",
+        "total":     "https://www.zongheng.com/rank/total.html",
+        "yuepiao":   "https://www.zongheng.com/rank/yuepiao.html",
+        "subscribe": "https://www.zongheng.com/rank/subscribe.html",
+        "newbook":   "https://www.zongheng.com/rank/newbook.html",
     }
 
+    # "all" 模式覆盖为 6 种
+    ALL_RANKING_TYPES = ["daily", "monthly", "total", "yuepiao", "subscribe", "newbook"]
+
+    # 详情页描述 / 标签 候选选择器(纵横 DOM)
+    _DESC_SELECTORS = [
+        "meta[name='description']::attr(content)",
+        ".book-intro::text",
+        ".book-dec::text",
+        ".book-info-intro::text",
+        ".intro::text",
+    ]
+    _TAG_SELECTORS = [
+        ".book-label a::text",
+        ".label a::text",
+        ".book-tag a::text",
+        ".tag-list a::text",
+        ".tags a::text",
+    ]
+
     async def start(self):
-        """Scrapy 2.16+ async entry,支持 all 模式"""
-        for rt in self.iter_all_types():
-            url = self._HTML_URLS.get(rt) or f"https://www.zongheng.com/rank/{rt}.html"
-            yield scrapy.Request(
-                url, callback=self.parse, dont_filter=True,
-                meta={"ranking_type": rt},
-                headers={"Referer": "https://www.zongheng.com/"},
-            )
+        """Scrapy 2.16+ async entry,支持 all 模式 + 分页
+
+        rich-crawler-data:
+        - 6 种榜单(daily/monthly/total/yuepiao/subscribe/newbook)
+        - 用 build_rank_requests 翻页,但纵横是 SPA,分页参数格式未确认,
+          实施时观察;目前 pages=1 保险起见
+        - newbook URL 虽 200 但实际 404,parse 内 is_404_page 兜底
+        """
+        for req in self.build_rank_requests(
+            rank_paths=self._HTML_URLS,
+            base_url="",
+            callback=self.parse,
+            meta_extra={"site_code": self.site_code},
+        ):
+            req.headers["Referer"] = "https://www.zongheng.com/"
+            yield req
 
     def parse(self, response):
         ranking_type = response.meta.get("ranking_type", self.ranking_type)
+        page = response.meta.get("page", 1)
+
+        # 200 + 404 错误页兜底(Nuxt SSR 已知 newbook 是这种情况)
+        if self.is_404_page(response):
+            self.logger.warning(
+                f"zongheng[{ranking_type}] page={page} 返回 200 但内容是 404 错误页,跳过"
+            )
+            return
+
         items, sel_used = self._try_selectors(response)
 
         if items:
@@ -205,6 +250,12 @@ class ZonghengSpider(BaseSpider):
 
     def parse_detail(self, response):
         meta = response.meta
+        if self.is_404_page(response):
+            self.logger.warning(
+                f"zongheng 详情页 404: {meta.get('external_id')} {response.url}"
+            )
+            return
+
         cover = meta.get("cover", "") or (
             response.css(".book_img img::attr(src)").get()
             or response.css(".cover img::attr(src)").get()
@@ -226,6 +277,10 @@ class ZonghengSpider(BaseSpider):
             if cat_item:
                 yield cat_item
 
+        # rich-crawler-data: 抽取 description / tags
+        description = self.make_description(response, self._DESC_SELECTORS)
+        tags = self.make_tags(response, self._TAG_SELECTORS)
+
         yield self.make_novel(
             external_id=meta["external_id"],
             title=meta.get("title", ""),
@@ -234,4 +289,6 @@ class ZonghengSpider(BaseSpider):
             cover_url=cover,
             novel_url=response.url,
             word_count=word,
+            description=description,
+            tags=tags,
         )
