@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel.rank.mapper.NovelMapper">
+
+    <!-- 小说详情(连 site) -->
+    <select id="selectNovelDetail" resultType="java.util.Map">
+        SELECT
+            n.id           AS id,
+            s.code         AS siteCode,
+            s.name         AS siteName,
+            n.title        AS title,
+            n.author       AS author,
+            n.category     AS category,
+            n.cover_url    AS coverUrl,
+            n.novel_url    AS novelUrl,
+            n.word_count   AS wordCount,
+            n.status       AS status,
+            n.first_seen   AS firstSeen,
+            n.last_crawl_time AS lastCrawlTime
+        FROM novel n
+        JOIN site s ON n.site_id = s.id
+        WHERE n.id = #{id}
+    </select>
+
+</mapper>

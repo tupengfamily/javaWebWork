@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel.rank.mapper.CrawlTaskMapper">
+
+    <!-- 任务列表(连 site) -->
+    <select id="selectTaskPage" resultType="java.util.Map">
+        SELECT
+            t.id              AS id,
+            s.code            AS siteCode,
+            s.name            AS siteName,
+            t.ranking_type    AS rankingType,
+            t.category        AS category,
+            t.trigger_type    AS triggerType,
+            t.status          AS status,
+            t.progress        AS progress,
+            t.fetched_count   AS fetchedCount,
+            t.error_message   AS errorMessage,
+            t.created_by      AS createdBy,
+            t.created_at      AS createdAt,
+            t.started_at      AS startedAt,
+            t.finished_at     AS finishedAt,
+            CASE WHEN t.finished_at IS NOT NULL AND t.started_at IS NOT NULL
+                 THEN TIMESTAMPDIFF(MICROSECOND, t.started_at, t.finished_at) DIV 1000
+                 ELSE NULL END AS durationMs
+        FROM crawl_task t
+        JOIN site s ON t.site_id = s.id
+        <where>
+            <if test="status != null and status != ''">t.status = #{status}</if>
+            <if test="siteCode != null and siteCode != ''">AND s.code = #{siteCode}</if>
+            <if test="triggerType != null and triggerType != ''">AND t.trigger_type = #{triggerType}</if>
+            <if test="startTime != null">AND t.created_at >= #{startTime}</if>
+            <if test="endTime != null">AND t.created_at &lt;= #{endTime}</if>
+        </where>
+        ORDER BY t.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countTaskPage" resultType="long">
+        SELECT COUNT(*)
+        FROM crawl_task t
+        JOIN site s ON t.site_id = s.id
+        <where>
+            <if test="status != null and status != ''">t.status = #{status}</if>
+            <if test="siteCode != null and siteCode != ''">AND s.code = #{siteCode}</if>
+            <if test="triggerType != null and triggerType != ''">AND t.trigger_type = #{triggerType}</if>
+            <if test="startTime != null">AND t.created_at >= #{startTime}</if>
+            <if test="endTime != null">AND t.created_at &lt;= #{endTime}</if>
+        </where>
+    </select>
+
+    <!-- 仪表盘:最近一次任务(每个站点) -->
+    <select id="selectLatestTaskPerSite" resultType="java.util.Map">
+        SELECT
+            t.site_id   AS siteId,
+            s.code      AS siteCode,
+            s.name      AS siteName,
+            s.color     AS color,
+            s.enabled   AS enabled,
+            t.id        AS lastTaskId,
+            t.status    AS lastTaskStatus,
+            t.finished_at AS lastTaskFinishedAt,
+            t.fetched_count AS lastTaskFetchedCount
+        FROM site s
+        LEFT JOIN (
+            SELECT t1.*
+            FROM crawl_task t1
+            INNER JOIN (
+                SELECT site_id, MAX(id) AS max_id
+                FROM crawl_task
+                GROUP BY site_id
+            ) t2 ON t1.site_id = t2.site_id AND t1.id = t2.max_id
+        ) t ON t.site_id = s.id
+        ORDER BY s.sort_order ASC
+    </select>
+
+    <!-- 仪表盘:近 7 天失败次数(按站点) -->
+    <select id="countRecentFailures" resultType="java.util.Map">
+        SELECT
+            site_id AS siteId,
+            COUNT(*) AS failureCount
+        FROM crawl_task
+        WHERE status = 'failed'
+          AND finished_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY)
+        GROUP BY site_id
+    </select>
+
+</mapper>

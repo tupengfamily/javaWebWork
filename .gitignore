@@ -1,0 +1,68 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OpenSpec / OpenCode
+.opencode/
+.trae/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/coverage/
+
+# Backend
+backend/target/
+backend/*.jar
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+backend/HELP.md
+
+# Python
+crawler/__pycache__/
+crawler/**/__pycache__/
+crawler/*.pyc
+crawler/*.pyo
+crawler/*.pyd
+crawler/.Python
+crawler/venv/
+crawler/env/
+crawler/.env
+crawler/.pytest_cache/
+crawler/.mypy_cache/
+crawler/logs/
+crawler/*.egg-info/
+
+# 根目录运行时产物 - dev.bat / start.bat 生成的日志与诊断文件
+# (运行时日志、curl/端口/进程诊断输出、临时 PowerShell 脚本)
+logs/*.log
+logs/*.err
+logs/*.txt
+logs/*.ps1
+logs/*.bat
+logs/*.sh
+.pids/
+
+# Docker
+db_data/
+crawler_logs/
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

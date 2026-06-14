@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.novel.rank.mapper.RankingRecordMapper">
+
+    <!-- 最新榜单 Top N (某站点某榜单类型最近一次抓取) -->
+    <!-- 过滤 category 时用 COALESCE(r.category, n.category),兼容历史 ranking_record.category 为 NULL 的数据 -->
+    <select id="selectLatestRanking" resultType="java.util.Map">
+        SELECT
+            r.`rank`           AS `rank`,
+            n.id               AS novelId,
+            n.title            AS title,
+            n.author           AS author,
+            n.category         AS category,
+            n.cover_url        AS coverUrl,
+            n.novel_url        AS novelUrl,
+            n.word_count       AS wordCount,
+            n.status           AS status,
+            r.view_count       AS viewCount,
+            r.rec_count        AS recCount,
+            r.crawl_time       AS crawlTime
+        FROM v_latest_rank_snapshot r
+        JOIN novel n ON r.novel_id = n.id
+        <where>
+            r.ranking_type = #{rankingType}
+            AND r.site_id = (SELECT id FROM site WHERE code = #{siteCode})
+            <if test="category != null and category != ''">
+                AND COALESCE(r.category, n.category) = #{category}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (n.title LIKE CONCAT('%', #{keyword}, '%') OR n.author LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY r.`rank` ASC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countLatestRanking" resultType="long">
+        SELECT COUNT(*)
+        FROM v_latest_rank_snapshot r
+        JOIN novel n ON r.novel_id = n.id
+        <where>
+            r.ranking_type = #{rankingType}
+            AND r.site_id = (SELECT id FROM site WHERE code = #{siteCode})
+            <if test="category != null and category != ''">
+                AND COALESCE(r.category, n.category) = #{category}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (n.title LIKE CONCAT('%', #{keyword}, '%') OR n.author LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <!-- 单小说时间序列 -->
+    <select id="selectNovelTrend" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(crawl_time, '%m-%d %H:%i') AS `time`,
+            `rank`    AS `rank`,
+            view_count AS viewCount,
+            rec_count  AS recCount
+        FROM ranking_record
+        WHERE novel_id = #{novelId}
+          AND ranking_type = #{rankingType}
+          AND crawl_time >= DATE_SUB(NOW(3), INTERVAL #{days} DAY)
+        ORDER BY crawl_time ASC
+    </select>
+
+    <!-- 多小说对比 -->
+    <select id="selectMultiNovelTrend" resultType="java.util.Map">
+        SELECT
+            n.id          AS novelId,
+            n.title       AS title,
+            s.code        AS siteCode,
+            s.color       AS color,
+            DATE_FORMAT(r.crawl_time, '%m-%d %H:%i') AS `time`,
+            <choose>
+                <when test="metric == 'rank'">r.`rank`</when>
+                <when test="metric == 'viewCount'">r.view_count</when>
+                <when test="metric == 'recCount'">r.rec_count</when>
+                <otherwise>r.view_count</otherwise>
+            </choose>
+            AS `value`
+        FROM ranking_record r
+        JOIN novel n ON r.novel_id = n.id
+        JOIN site  s ON r.site_id  = s.id
+        WHERE n.id IN
+            <foreach collection="novelIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+          AND r.crawl_time >= DATE_SUB(NOW(3), INTERVAL #{days} DAY)
+        ORDER BY r.crawl_time ASC
+    </select>
+
+    <!-- 跨站 TOP N(基于最新一次 daily 抓取) -->
+    <select id="selectCrossSiteTop" resultType="java.util.Map">
+        SELECT
+            r.`rank`     AS `rank`,
+            n.id         AS novelId,
+            n.title      AS title,
+            s.code       AS siteCode,
+            s.name       AS siteName,
+            s.color      AS color,
+            r.view_count AS viewCount
+        FROM v_latest_rank_snapshot r
+        JOIN novel n ON r.novel_id = n.id
+        JOIN site  s ON r.site_id  = s.id
+        <where>
+            r.ranking_type = 'daily'
+            <if test="category != null and category != ''">
+                AND r.category = #{category}
+            </if>
+        </where>
+        ORDER BY r.view_count DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

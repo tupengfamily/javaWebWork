@@ -1,0 +1,118 @@
+version: "3.9"
+
+services:
+  # ============================================================
+  # MySQL 8.0
+  # ============================================================
+  mysql:
+    image: mysql:8.0
+    container_name: novel-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: novel_rank
+      MYSQL_USER: ${MYSQL_USER:-novel}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-novel123}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - novel_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --max_connections=200
+
+  # ============================================================
+  # Spring Boot Backend
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: novel-backend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: docker
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DB: novel_rank
+      MYSQL_USER: ${MYSQL_USER:-novel}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-novel123}
+      JWT_SECRET: ${JWT_SECRET:-please-change-me-in-production-32bytes-min}
+      JWT_EXPIRE_HOURS: 24
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - novel_net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ============================================================
+  # Vue Frontend (multi-stage: build + nginx)
+  # ============================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: novel-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - novel_net
+    depends_on:
+      - backend
+
+  # ============================================================
+  # Python Crawler (no exposed port)
+  # ============================================================
+  crawler:
+    build:
+      context: ./crawler
+      dockerfile: Dockerfile
+    container_name: novel-crawler
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: novel_rank
+      DB_USER: ${MYSQL_USER:-novel}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-novel123}
+      LOG_LEVEL: INFO
+    networks:
+      - novel_net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - crawler_logs:/app/logs
+
+networks:
+  novel_net:
+    driver: bridge
+
+volumes:
+  db_data:
+    name: novel_db_data
+  crawler_logs:
+    name: novel_crawler_logs
