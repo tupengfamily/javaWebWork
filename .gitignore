@@ -62,7 +62,6 @@ logs/*.sh
 
 # Docker
 db_data/
-crawler_logs/
 data/
 
 # OS

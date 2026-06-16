@@ -22,7 +22,6 @@
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
         <jjwt.version>0.12.5</jjwt.version>
         <knife4j.version>4.5.0</knife4j.version>
-        <lombok.version>1.18.34</lombok.version>
     </properties>
 
     <dependencies>
@@ -92,16 +91,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Lombok(目前本机 Java 26 兼容性差,业务代码已手写 getter/setter) -->
-        <!-- 保留依赖以便 IDE 识别 @Slf4j 等,如不需要可删除 -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <optional>true</optional>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- Knife4j (Swagger) -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
@@ -128,14 +117,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
             </plugin>
         </plugins>
     </build>

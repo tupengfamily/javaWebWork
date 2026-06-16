@@ -166,7 +166,7 @@ MYSQL_PORT=3307
 | **MySQL 8.0** | 数据库 | `mysql --version` |
 
 > ⚠️ **Java 版本要求**:**必须是 Java 17**,**不能是 Java 21+**。
-> 项目用 Spring Boot 3.3.5 + MyBatis-Plus 3.5.5 + Lombok,需 Java 17(实测 Java 21+ 报 mybatis-spring factoryBeanObjectType 错)。
+> 项目用 Spring Boot 3.3.5 + MyBatis-Plus 3.5.5,需 Java 17(实测 Java 21+ 报 mybatis-spring factoryBeanObjectType 错)。
 > ⚠️ **Windows 必看**:本机如有 Java 26,装 Java 17 后要在 PATH 把 Java 17 放前面(后端 + 脚本会自动找 `JAVA_HOME`)。
 
 ### 3.2 装 MySQL(三种方式任选)
