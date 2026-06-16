@@ -16,6 +16,8 @@ class NovelData:
     cover_url: str = ""
     word_count: int = 0
     status: str = "ongoing"
+    description: str = ""    # 简介 (200-1000 字符,详情页抓)
+    tags: str = ""           # 逗号分隔标签 (2-8 个,详情页抓)
 
     def to_dict(self) -> dict:
         return asdict(self)

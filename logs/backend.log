@@ -8,36 +8,96 @@
 
  :: Spring Boot ::                (v3.3.5)
 
-2026-06-14T08:26:18.541+08:00  INFO 1808 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : Starting NovelRankApplication v1.0.0 using Java 26.0.1 with PID 1808 (E:\gitWork\javaWebWork\javaWebWork\backend\target\app.jar started by ltt in E:\gitWork\javaWebWork\javaWebWork\backend)
-2026-06-14T08:26:18.542+08:00 DEBUG 1808 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-14T08:26:18.543+08:00  INFO 1808 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : The following 1 profile is active: "dev"
-2026-06-14T08:26:19.408+08:00  WARN 1808 --- [novel-rank] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanDefinitionStoreException: Invalid bean definition with name 'categoryMapper' defined in URL [jar:nested:/E:/gitWork/javaWebWork/javaWebWork/backend/target/app.jar/!BOOT-INF/classes/!/com/novel/rank/mapper/CategoryMapper.class]: Invalid value type for attribute 'factoryBeanObjectType': java.lang.String
-2026-06-14T08:26:19.419+08:00  INFO 1808 --- [novel-rank] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+2026-06-14T21:53:49.075+08:00  INFO 19220 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : Starting NovelRankApplication v1.0.0 using Java 26.0.1 with PID 19220 (E:\gitWork\javaWebWork\javaWebWork\backend\target\app.jar started by ltt in E:\gitWork\javaWebWork\javaWebWork\backend)
+2026-06-14T21:53:49.078+08:00 DEBUG 19220 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : Running with Spring Boot v3.3.5, Spring v6.1.14
+2026-06-14T21:53:49.079+08:00  INFO 19220 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : The following 1 profile is active: "dev"
+2026-06-14T21:53:50.564+08:00  INFO 19220 --- [novel-rank] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-06-14T21:53:51.991+08:00  INFO 19220 --- [novel-rank] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-14T21:53:52.490+08:00  INFO 19220 --- [novel-rank] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-06-14T21:53:52.544+08:00  INFO 19220 --- [novel-rank] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-06-14T21:53:52.545+08:00  INFO 19220 --- [novel-rank] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3409 ms
+2026-06-14T21:53:52.632+08:00 DEBUG 19220 --- [novel-rank] [           main] c.n.r.security.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+Logging initialized using 'class org.apache.ibatis.logging.stdout.StdOutImpl' adapter.
+Initialization Sequence datacenterId:6 workerId:18
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.5.5 
+2026-06-14T21:53:53.452+08:00  WARN 19220 --- [novel-rank] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
 
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2026-06-14T08:26:19.434+08:00 ERROR 1808 --- [novel-rank] [           main] o.s.boot.SpringApplication               : Application run failed
+Using generated security password: f091924b-05bf-437e-91df-f145ce618760
 
-org.springframework.beans.factory.BeanDefinitionStoreException: Invalid bean definition with name 'categoryMapper' defined in URL [jar:nested:/E:/gitWork/javaWebWork/javaWebWork/backend/target/app.jar/!BOOT-INF/classes/!/com/novel/rank/mapper/CategoryMapper.class]: Invalid value type for attribute 'factoryBeanObjectType': java.lang.String
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.getTypeForFactoryBean(AbstractAutowireCapableBeanFactory.java:857) ~[spring-beans-6.1.14.jar!/:6.1.14]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getType(AbstractBeanFactory.java:743) ~[spring-beans-6.1.14.jar!/:6.1.14]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.findAnnotationOnBean(DefaultListableBeanFactory.java:735) ~[spring-beans-6.1.14.jar!/:6.1.14]
-	at org.springframework.boot.sql.init.dependency.AnnotationDependsOnDatabaseInitializationDetector.detect(AnnotationDependsOnDatabaseInitializationDetector.java:36) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.sql.init.dependency.DatabaseInitializationDependencyConfigurer$DependsOnDatabaseInitializationPostProcessor.detectDependsOnInitializationBeanNames(DatabaseInitializationDependencyConfigurer.java:152) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.sql.init.dependency.DatabaseInitializationDependencyConfigurer$DependsOnDatabaseInitializationPostProcessor.postProcessBeanFactory(DatabaseInitializationDependencyConfigurer.java:115) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:363) ~[spring-context-6.1.14.jar!/:6.1.14]
-	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:197) ~[spring-context-6.1.14.jar!/:6.1.14]
-	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:789) ~[spring-context-6.1.14.jar!/:6.1.14]
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:607) ~[spring-context-6.1.14.jar!/:6.1.14]
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352) ~[spring-boot-3.3.5.jar!/:3.3.5]
-	at com.novel.rank.NovelRankApplication.main(NovelRankApplication.java:15) ~[!/:1.0.0]
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:565) ~[na:na]
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102) ~[app.jar:1.0.0]
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64) ~[app.jar:1.0.0]
-	at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40) ~[app.jar:1.0.0]
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
 
+2026-06-14T21:53:53.461+08:00  INFO 19220 --- [novel-rank] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-06-14T21:53:54.099+08:00  INFO 19220 --- [novel-rank] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-06-14T21:53:54.110+08:00  INFO 19220 --- [novel-rank] [           main] com.novel.rank.NovelRankApplication      : Started NovelRankApplication in 5.52 seconds (process running for 6.177)
+2026-06-14T21:54:15.304+08:00  INFO 19220 --- [novel-rank] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-14T21:54:15.305+08:00  INFO 19220 --- [novel-rank] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-06-14T21:54:15.308+08:00  INFO 19220 --- [novel-rank] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7db0ee49] was not registered for synchronization because synchronization is not active
+2026-06-14T21:54:15.379+08:00  INFO 19220 --- [novel-rank] [nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-14T21:54:15.565+08:00  INFO 19220 --- [novel-rank] [nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@e84c4b0
+2026-06-14T21:54:15.569+08:00  INFO 19220 --- [novel-rank] [nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+JDBC Connection [HikariProxyConnection@1874783477 wrapping com.mysql.cj.jdbc.ConnectionImpl@e84c4b0] will not be managed by Spring
+==>  Preparing: SELECT n.id AS id, s.code AS siteCode, s.name AS siteName, n.title AS title, n.author AS author, n.category AS category, n.cover_url AS coverUrl, n.novel_url AS novelUrl, n.word_count AS wordCount, n.status AS status, -- IFNULL 保证 NULL 字段也返回 key(空字符串),前端无需可选链 IFNULL(n.description, '') AS description, IFNULL(n.tags, '') AS tags, n.first_seen AS firstSeen, n.last_crawl_time AS lastCrawlTime FROM novel n JOIN site s ON n.site_id = s.id WHERE n.id = ?
+==> Parameters: 1(Long)
+<==    Columns: id, siteCode, siteName, title, author, category, coverUrl, novelUrl, wordCount, status, description, tags, firstSeen, lastCrawlTime
+<==        Row: 1, qidian, ?????, 大奉打更人, 卖报小郎君, 仙侠, https://bookcover.yuewen.com/qdbimg/349573/1011455949/180, , 3800000, completed, <<BLOB>>, 玄幻,穿越,系统,无敌流,龙傲天, 2026-06-14 20:58:51.358, 2026-06-14 20:58:51.358
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7db0ee49]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5ff24d48] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@439462827 wrapping com.mysql.cj.jdbc.ConnectionImpl@e84c4b0] will not be managed by Spring
+==>  Preparing: SELECT id,code,name,sort_order FROM category ORDER BY sort_order ASC
+==> Parameters: 
+<==    Columns: id, code, name, sort_order
+<==        Row: 1, xuanhuan, ??, 1
+<==        Row: 2, dushi, ??, 2
+<==        Row: 3, xianxia, ??, 3
+<==        Row: 4, kehuan, ??, 4
+<==        Row: 5, lishi, ??, 5
+<==        Row: 6, junshi, ??, 6
+<==        Row: 7, youxi, ??, 7
+<==        Row: 8, tiyu, ??, 8
+<==        Row: 9, xiaoyuan, ??, 9
+<==        Row: 10, qihuan, ??, 10
+<==        Row: 11, yanqing, ??, 11
+<==        Row: 12, xuanyi, ??, 12
+<==        Row: 13, kongbu, ??, 13
+<==        Row: 14, mingzhu, ??, 14
+<==        Row: 15, qita, ??, 99
+<==      Total: 15
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5ff24d48]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3c55cafd] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@979299281 wrapping com.mysql.cj.jdbc.ConnectionImpl@e84c4b0] will not be managed by Spring
+==>  Preparing: SELECT id,code,name,description FROM ranking_type ORDER BY id ASC
+==> Parameters: 
+<==    Columns: id, code, name, description
+<==        Row: 1, daily, ??, ??????
+<==        Row: 2, monthly, ??, ??????
+<==        Row: 3, category, ???, ????????
+<==        Row: 4, total, ??, ?????
+<==        Row: 5, all, ????, ?????? daily/monthly/total ????
+<==      Total: 5
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3c55cafd]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@72d80f77] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@814241460 wrapping com.mysql.cj.jdbc.ConnectionImpl@e84c4b0] will not be managed by Spring
+==>  Preparing: SELECT COUNT(*) FROM v_latest_rank_snapshot r JOIN novel n ON r.novel_id = n.id WHERE r.ranking_type = ? AND r.site_id = (SELECT id FROM site WHERE code = ?) AND COALESCE(r.category, n.category) = ?
+==> Parameters: daily(String), qidian(String), 奇幻(String)
+<==    Columns: COUNT(*)
+<==        Row: 1
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@72d80f77]
+Creating a new SqlSession
+SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@213c6d51] was not registered for synchronization because synchronization is not active
+JDBC Connection [HikariProxyConnection@195009259 wrapping com.mysql.cj.jdbc.ConnectionImpl@e84c4b0] will not be managed by Spring
+==>  Preparing: SELECT r.`rank` AS `rank`, n.id AS novelId, n.title AS title, n.author AS author, n.category AS category, n.cover_url AS coverUrl, n.novel_url AS novelUrl, n.word_count AS wordCount, n.status AS status, r.view_count AS viewCount, r.rec_count AS recCount, r.crawl_time AS crawlTime FROM v_latest_rank_snapshot r JOIN novel n ON r.novel_id = n.id WHERE r.ranking_type = ? AND r.site_id = (SELECT id FROM site WHERE code = ?) AND COALESCE(r.category, n.category) = ? ORDER BY r.`rank` ASC LIMIT ?, ?
+==> Parameters: daily(String), qidian(String), 奇幻(String), 0(Long), 20(Long)
+<==    Columns: rank, novelId, title, author, category, coverUrl, novelUrl, wordCount, status, viewCount, recCount, crawlTime
+<==        Row: 3, 3, 诡秘之主, 爱潜水的乌贼, 奇幻, https://bookcover.yuewen.com/qdbimg/349573/1037155234/180, , 4470000, completed, 261000000, 0, 2026-06-14 20:58:51.363
+<==      Total: 1
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@213c6d51]

@@ -79,6 +79,7 @@ CREATE TABLE novel (
     word_count      INT             NOT NULL DEFAULT 0          COMMENT '字数',
     status          VARCHAR(16)     NOT NULL DEFAULT 'ongoing'  COMMENT 'ongoing/completed',
     description     TEXT            DEFAULT NULL                COMMENT '简介',
+    tags            VARCHAR(1024)   DEFAULT NULL                COMMENT '逗号分隔标签(2-8 个,rich-crawler-data 新增)',
     first_seen      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3)  COMMENT '首次出现',
     last_crawl_time DATETIME(3)     DEFAULT NULL                COMMENT '最近一次爬取',
     created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -271,12 +272,13 @@ INSERT INTO site (code, name, base_url, spider_class, color, sort_order) VALUES
 ('zongheng', '纵横中文网',  'https://www.zongheng.com', 'novel_crawler.spiders.zongheng.ZonghengSpider', '#1E9FFF', 3);
 
 -- 调度配置 - 默认三次刷新
+-- rich-crawler-data: taskTimeoutMinutes 30→60, crawlAllRankingTypes 增加 yuepiao/newbook/finish
 INSERT INTO schedule_config (`key`, `value`, description) VALUES
 ('main', JSON_OBJECT(
     'dailyCrawlTimes',      JSON_ARRAY('08:00', '14:00', '20:00'),
     'maxConcurrentTasks',   2,
-    'taskTimeoutMinutes',   30,
-    'crawlAllRankingTypes', JSON_ARRAY('daily', 'monthly', 'category')
+    'taskTimeoutMinutes',   60,
+    'crawlAllRankingTypes', JSON_ARRAY('daily', 'monthly', 'total', 'yuepiao', 'newbook', 'finish')
 ), '调度主配置');
 
 

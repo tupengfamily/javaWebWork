@@ -171,13 +171,21 @@ class NovelUpsertPipeline:
             site_id = row[0]
 
             # 2. UPSERT
+            # description: 截断 1000 字符
+            desc = (item.description or "")[:1000]
+            # tags: 过滤空值,限制 8 个,逗号 join(去重已在 make_tags 中做)
+            tags_raw = (item.tags or "").split(",")
+            tags_clean = ",".join(
+                t.strip() for t in tags_raw if t.strip()
+            )[:1024]
+
             conn.execute(text("""
                 INSERT INTO novel
                   (site_id, external_id, title, author, category, cover_url, novel_url,
-                   word_count, status, first_seen, last_crawl_time)
+                   word_count, status, description, tags, first_seen, last_crawl_time)
                 VALUES
                   (:site_id, :external_id, :title, :author, :category, :cover_url, :novel_url,
-                   :word_count, :status, NOW(3), NOW(3))
+                   :word_count, :status, :description, :tags, NOW(3), NOW(3))
                 ON DUPLICATE KEY UPDATE
                   title           = VALUES(title),
                   author          = VALUES(author),
@@ -186,8 +194,11 @@ class NovelUpsertPipeline:
                   novel_url       = VALUES(novel_url),
                   word_count      = VALUES(word_count),
                   status          = VALUES(status),
+                  description     = COALESCE(NULLIF(VALUES(description), ''), description),
+                  tags            = COALESCE(NULLIF(VALUES(tags), ''), tags),
                   last_crawl_time = NOW(3)
                   -- 注意: first_seen 不更新(首次抓取时间保持原值)
+                  -- COALESCE 避免抓取到的简介/标签为空字符串时把已有的真值覆盖掉
             """), {
                 "site_id": site_id,
                 "external_id": item.external_id,
@@ -198,6 +209,8 @@ class NovelUpsertPipeline:
                 "novel_url": item.novel_url,
                 "word_count": item.word_count,
                 "status": item.status,
+                "description": desc,
+                "tags": tags_clean or None,
             })
         return item
 

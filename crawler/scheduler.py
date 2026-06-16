@@ -57,7 +57,11 @@ class CrawlScheduler:
         self.engine = create_engine(CFG.db_url, pool_pre_ping=True, pool_recycle=3600)
         # 内存中的当前配置,用于 diff 判断是否需要 reload
         self.current_times: list[str] = []
-        self.current_types: list[str] = ["daily", "monthly", "category"]
+        # rich-crawler-data: 默认值扩展为 6 种榜单
+        # 注:实际值由 schedule_config.main.value.crawlAllRankingTypes 覆盖
+        self.current_types: list[str] = [
+            "daily", "monthly", "total", "yuepiao", "newbook", "finish"
+        ]
         # 已注册的 cron job ID,reload 时要清掉
         self.job_ids: list[str] = []
         # reload 任务自身 ID(避免被清掉)
@@ -113,7 +117,11 @@ class CrawlScheduler:
             return
 
         new_times = list(value.get("dailyCrawlTimes", []))
-        new_types = list(value.get("crawlAllRankingTypes", ["daily", "monthly", "category"]))
+        # rich-crawler-data: 6 种榜单兜底(与 init.sql / 当前 default 一致)
+        new_types = list(value.get(
+            "crawlAllRankingTypes",
+            ["daily", "monthly", "total", "yuepiao", "newbook", "finish"]
+        ))
 
         # 3. diff - 一样就不动
         if new_times == self.current_times and new_types == self.current_types:

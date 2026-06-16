@@ -55,28 +55,53 @@ class QidianSpider(BaseSpider):
         "total":   "https://www.qidian.com/rank/h5_rank_list?channelId=0&rankId=3",
     }
 
-    # ---- HTML URL 模板 ----
-    _HTML_URLS = {
-        "daily":   "https://www.qidian.com/rank/daily/",
-        "monthly": "https://www.qidian.com/rank/monthly/",
-        "total":   "https://www.qidian.com/rank/total/",
+    # ---- HTML URL 模板(rank_path,base_url 用 https://www.qidian.com)----
+    # rich-crawler-data: 新增 yuepiao / newbook / finish 三个榜单
+    _RANK_PATHS = {
+        "daily":   "/rank/daily/",
+        "monthly": "/rank/monthly/",
+        "total":   "/rank/total/",
+        "yuepiao": "/rank/yuepiao/",
+        "newbook": "/rank/newbook/",
+        "finish":  "/rank/finish/",
     }
+    _RANK_BASE = "https://www.qidian.com"
+
+    # "all" 模式覆盖为 6 个榜单
+    ALL_RANKING_TYPES = ["daily", "monthly", "total", "yuepiao", "newbook", "finish"]
+
+    # 详情页描述 / 标签 候选选择器(起点 DOM 特征)
+    _DESC_SELECTORS = [
+        "meta[name='description']::attr(content)",
+        ".book-intro::text",
+        ".book-desc::text",
+        "#book-intro::text",
+        ".intro p::text",
+    ]
+    _TAG_SELECTORS = [
+        ".book-intro-tags a::text",
+        ".book-tag a::text",
+        ".labels a::text",
+        ".tag-list a::text",
+        ".book-info .tag a::text",
+    ]
 
     async def start(self):
-        """构造初始请求: 根据 ranking_type 决定单榜单还是 all 模式
+        """构造初始请求:根据 ranking_type 决定单榜单还是 all 模式,每榜单翻 N 页
 
-        "all" 模式同时发起 3 个榜单的 HTML 请求(并发),并各自产出 ranking 记录,
-        由 dedup pipeline 跨 (ranking_type, novel_external_id) 维度保证幂等。
+        rich-crawler-data:
+        - 使用 BaseSpider.build_rank_requests 助手,自动按 self.pages 翻页
+        - "all" 模式遍历 ALL_RANKING_TYPES 6 种榜单
+        - 单 ranking_type 模式只发起 1 种榜单 × N 页
         """
-        for rt in self.iter_all_types():
-            url = self._HTML_URLS.get(rt) or f"https://www.qidian.com/rank/{rt}/"
-            yield scrapy.Request(
-                url,
-                callback=self.parse,
-                meta={"ranking_type": rt},
-                dont_filter=True,
-                headers={"Referer": "https://www.qidian.com/"},
-            )
+        for req in self.build_rank_requests(
+            rank_paths=self._RANK_PATHS,
+            base_url=self._RANK_BASE,
+            callback=self.parse,
+            meta_extra={"site_code": self.site_code},
+        ):
+            req.headers["Referer"] = "https://www.qidian.com/"
+            yield req
 
     # ============================================================
     # HTML 解析
@@ -84,6 +109,15 @@ class QidianSpider(BaseSpider):
     def parse(self, response):
         """解析列表页: 先试 HTML, 失败后走 API"""
         ranking_type = response.meta.get("ranking_type", self.ranking_type)
+        page = response.meta.get("page", 1)
+
+        # 200 + 404 错误页兜底(SPA 类站点常见)
+        if self.is_404_page(response):
+            self.logger.warning(
+                f"qidian[{ranking_type}] page={page} 返回 200 但内容是 404 错误页,跳过"
+            )
+            return
+
         items, selector_used = self._try_selectors(response)
 
         if items:
@@ -260,6 +294,13 @@ class QidianSpider(BaseSpider):
     def parse_detail(self, response):
         meta = response.meta
 
+        # 404 兜底
+        if self.is_404_page(response):
+            self.logger.warning(
+                f"qidian 详情页 404: {meta.get('external_id')} {response.url}"
+            )
+            return
+
         # cover: 优先用列表页/榜单 API 给的,否则从详情页抽
         cover = meta.get("cover", "") or (
             response.css(".book-img img::attr(src)").get()
@@ -297,6 +338,10 @@ class QidianSpider(BaseSpider):
             if cat_item:
                 yield cat_item
 
+        # rich-crawler-data: 抽取 description / tags
+        description = self.make_description(response, self._DESC_SELECTORS)
+        tags = self.make_tags(response, self._TAG_SELECTORS)
+
         yield self.make_novel(
             external_id=meta["external_id"],
             title=title,
@@ -306,4 +351,6 @@ class QidianSpider(BaseSpider):
             novel_url=response.url,
             word_count=word,
             status=status,
+            description=description,
+            tags=tags,
         )

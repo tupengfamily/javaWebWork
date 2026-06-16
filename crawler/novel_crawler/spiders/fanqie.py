@@ -44,17 +44,45 @@ class FanqieSpider(BaseSpider):
     ]
 
     # ---- API 入口(优先使用) ----
+    # rich-crawler-data: 新增 hot / newbook / good / finish 4 种榜单(rank_id 3-6)
     _RANK_API_URLS = {
         "daily":   "https://fanqienovel.com/api/author/rank/0",
         "monthly": "https://fanqienovel.com/api/author/rank/1",
         "total":   "https://fanqienovel.com/api/author/rank/2",
+        "hot":     "https://fanqienovel.com/api/author/rank/3",
+        "newbook": "https://fanqienovel.com/api/author/rank/4",
+        "good":    "https://fanqienovel.com/api/author/rank/5",
+        "finish":  "https://fanqienovel.com/api/author/rank/6",
     }
     # HTML 兜底 URL
     _RANK_HTML_URLS = {
         "daily":   "https://fanqienovel.com/rank/0",
         "monthly": "https://fanqienovel.com/rank/1",
         "total":   "https://fanqienovel.com/rank/2",
+        "hot":     "https://fanqienovel.com/rank/3",
+        "newbook": "https://fanqienovel.com/rank/4",
+        "good":    "https://fanqienovel.com/rank/5",
+        "finish":  "https://fanqienovel.com/rank/6",
     }
+
+    # "all" 模式覆盖为 7 种
+    ALL_RANKING_TYPES = ["daily", "monthly", "total", "hot", "newbook", "good", "finish"]
+
+    # 详情页描述 / 标签 候选选择器(番茄 DOM)
+    _DESC_SELECTORS = [
+        "meta[name='description']::attr(content)",
+        ".book-intro::text",
+        ".book-desc::text",
+        ".page-abstract::text",
+        ".info-content p::text",
+    ]
+    _TAG_SELECTORS = [
+        ".book-tag a::text",
+        ".tag-list a::text",
+        ".book-intro-tags a::text",
+        ".book-info-tags a::text",
+        ".info-tags a::text",
+    ]
 
     _MOBILE_UA = (
         "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) "
@@ -63,28 +91,38 @@ class FanqieSpider(BaseSpider):
     )
 
     async def start(self):
-        """Scrapy 2.16+ async entry — API 优先 + HTML 兜底,支持 all 模式"""
+        """Scrapy 2.16+ async entry — API 优先 + HTML 兜底,支持 all 模式 + 分页
+
+        rich-crawler-data:
+        - 7 种榜单(daily/monthly/total/hot/newbook/good/finish)
+        - API 默认不支持分页(无 ?page 参数),HTML 路径会自动拼分页
+        - pages=1 即可防止 API 重复请求
+        """
+        # 临时把 pages 设为 1 走 API(API 不分页);HTML 兜底才用 pages
+        # 但 build_rank_requests 会同时跑 API + HTML,需自定义逻辑
         for rt in self.iter_all_types():
-            # 首选: API
+            # 首选: API(只请求 page=1)
             api_url = self._RANK_API_URLS.get(rt)
             if api_url:
                 yield scrapy.Request(
                     api_url, callback=self._parse_api, dont_filter=True,
-                    meta={"ranking_type": rt},
+                    meta={"ranking_type": rt, "page": 1},
                     headers={
                         "Accept": "application/json, text/plain, */*",
                         "Referer": "https://fanqienovel.com/rank/",
                         "User-Agent": self._MOBILE_UA,
                     },
                 )
-            # 兜底: HTML
-            html_url = self._RANK_HTML_URLS.get(rt) or f"https://fanqienovel.com/rank/{rt}"
-            yield scrapy.Request(
-                html_url, callback=self._parse_html, dont_filter=True,
-                meta={"ranking_type": rt},
-                headers={"Referer": "https://fanqienovel.com/",
-                         "User-Agent": self._MOBILE_UA},
-            )
+            # 兜底: HTML(支持分页)
+            for page in range(1, max(1, int(self.pages)) + 1):
+                html_url_base = self._RANK_HTML_URLS.get(rt) or f"https://fanqienovel.com/rank/{rt}"
+                html_url = f"{html_url_base}?page={page}" if page > 1 else html_url_base
+                yield scrapy.Request(
+                    html_url, callback=self._parse_html, dont_filter=True,
+                    meta={"ranking_type": rt, "page": page},
+                    headers={"Referer": "https://fanqienovel.com/",
+                             "User-Agent": self._MOBILE_UA},
+                )
 
     # ============ API 解析(主路径) ============
     def _parse_api(self, response):
@@ -238,6 +276,12 @@ class FanqieSpider(BaseSpider):
 
     def parse_detail(self, response):
         meta = response.meta
+        if self.is_404_page(response):
+            self.logger.warning(
+                f"fanqie 详情页 404: {meta.get('external_id')} {response.url}"
+            )
+            return
+
         cover = meta.get("cover", "") or (
             response.css(".book-cover img::attr(src)").get()
             or response.css(".cover-img img::attr(src)").get()
@@ -262,6 +306,10 @@ class FanqieSpider(BaseSpider):
             if cat_item:
                 yield cat_item
 
+        # rich-crawler-data: 抽取 description / tags
+        description = self.make_description(response, self._DESC_SELECTORS)
+        tags = self.make_tags(response, self._TAG_SELECTORS)
+
         yield self.make_novel(
             external_id=meta["external_id"],
             title=meta.get("title", ""),
@@ -271,4 +319,6 @@ class FanqieSpider(BaseSpider):
             novel_url=response.url,
             word_count=word,
             status=status,
+            description=description,
+            tags=tags,
         )
