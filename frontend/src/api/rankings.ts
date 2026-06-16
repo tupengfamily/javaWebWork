@@ -12,6 +12,7 @@ export interface RankingItemVO {
   wordCount: number
   status: string
   novelUrl: string
+  crawlTime?: string
 }
 
 export interface PageResp<T> {
