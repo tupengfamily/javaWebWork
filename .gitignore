@@ -57,9 +57,11 @@ logs/*.bat
 logs/*.sh
 .pids/
 
+# 根目录下的临时日志(构建过程输出、镜像拉取记录等)
+/*.log
+
 # Docker
 db_data/
-crawler_logs/
 data/
 
 # OS

@@ -19,7 +19,7 @@ docker run -d --name novel-mysql -p 3306:3306 \
 ```
 
 **后端** (用 IDE 直接 Run `NovelRankApplication`):
-- IDE 装 Spring Boot + Lombok 插件
+- IDE 装 Spring Boot 插件
 - `application.yml` 默认读 `application-dev.yml`,连 localhost:3306
 
 **前端**:
