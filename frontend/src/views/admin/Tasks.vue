@@ -7,7 +7,7 @@
     <el-card class="block">
       <h3>站点状态</h3>
       <el-row :gutter="12">
-        <el-col v-for="s in siteStatus" :key="s.siteId" :span="8">
+        <el-col v-for="s in siteStatus" :key="s.siteId" :xs="24" :sm="12" :md="8" :lg="8">
           <el-card class="site-card" :body-style="{ padding: '12px' }">
             <div class="site-head">
               <el-tag :color="s.color" effect="dark" style="color: #fff; border-color: transparent">{{ s.siteName }}</el-tag>
@@ -17,7 +17,7 @@
             <p v-if="s.lastTask">
               上次:
               <el-tag size="small" :type="statusType(s.lastTask.status)">{{ s.lastTask.status }}</el-tag>
-              {{ s.lastTask.finishedAt }}
+              {{ formatTime(s.lastTask.finishedAt) }}
             </p>
             <p v-else>尚无任务</p>
             <p v-if="s.recentFailureCount > 0" class="warn">近 7 天失败 {{ s.recentFailureCount }} 次</p>
@@ -62,30 +62,59 @@
           <el-option label="已取消" value="cancelled" />
         </el-select>
       </div>
-      <el-table :data="taskData.records" v-loading="taskLoading" stripe>
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="siteName" label="站点" width="100" />
-        <el-table-column prop="rankingType" label="榜单" width="100" />
-        <el-table-column prop="triggerType" label="触发" width="100" />
-        <el-table-column prop="fetchedCount" label="抓取" width="80" align="right" />
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column prop="finishedAt" label="完成时间" width="180" />
-        <el-table-column label="耗时" width="90">
-          <template #default="{ row }">{{ row.durationMs ? Math.round(row.durationMs / 1000) + 's' : '-' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="220">
-          <template #default="{ row }">
-            <el-button v-if="row.status === 'pending'" size="small" @click="cancelTask(row.id)">取消</el-button>
-            <el-button v-if="row.status === 'failed'" size="small" type="primary" @click="retryTask(row.id)">重试</el-button>
-            <el-button size="small" @click="viewLog(row.id)">日志</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="table-wrap">
+        <el-table :data="taskData.records" v-loading="taskLoading" stripe>
+          <el-table-column prop="id" label="ID" min-width="55" />
+          <el-table-column label="状态" min-width="80">
+            <template #default="{ row }">
+              <el-tag :type="statusType(row.status)" size="small">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <!-- 进度 -->
+          <el-table-column label="进度" min-width="120">
+            <template #default="{ row }">
+              <div v-if="row.status === 'running'" class="progress-cell">
+                <el-progress
+                  :percentage="row.progress || 0"
+                  :stroke-width="16"
+                  :text-inside="true"
+                  :status="row.progress === 100 ? 'success' : undefined"
+                  :indeterminate="row.progress === 0"
+                />
+              </div>
+              <div v-else-if="row.status === 'pending'" class="progress-cell">
+                <el-progress :percentage="0" :stroke-width="8" color="#909399" />
+              </div>
+              <div v-else-if="row.status === 'success'" class="progress-cell">
+                <el-progress :percentage="100" :stroke-width="8" status="success" />
+              </div>
+              <div v-else class="progress-cell">
+                <span class="progress-text">-</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="siteName" label="站点" min-width="80" />
+          <el-table-column prop="rankingType" label="榜单" min-width="80" />
+          <el-table-column prop="triggerType" label="触发" min-width="70" />
+          <el-table-column prop="fetchedCount" label="抓取数" min-width="65" align="center" />
+          <el-table-column label="创建时间" min-width="160">
+            <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+          </el-table-column>
+          <el-table-column label="完成时间" min-width="160">
+            <template #default="{ row }">{{ formatTime(row.finishedAt) }}</template>
+          </el-table-column>
+          <el-table-column label="耗时" min-width="70">
+            <template #default="{ row }">{{ row.durationMs ? Math.round(row.durationMs / 1000) + 's' : '-' }}</template>
+          </el-table-column>
+          <el-table-column label="操作" min-width="170" fixed="right">
+            <template #default="{ row }">
+              <el-button v-if="row.status === 'pending'" size="small" @click="cancelTask(row.id)">取消</el-button>
+              <el-button v-if="row.status === 'failed'" size="small" type="primary" @click="retryTask(row.id)">重试</el-button>
+              <el-button size="small" @click="viewLog(row.id)">日志</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
       <el-pagination
         background layout="total, prev, pager, next, jumper"
         :total="taskData.total" :current-page="taskFilter.pageNum"
@@ -94,21 +123,29 @@
       />
     </el-card>
 
-    <!-- 4. 实时日志 -->
+    <!-- 4. 实时日志（默认折叠，点击展开） -->
     <el-card class="block">
-      <div class="row-between">
-        <h3>实时日志</h3>
-        <div>
-          <el-select v-model="logFilter.level" placeholder="级别" clearable @change="fetchLogs" style="width: 120px">
+      <div class="row-between" style="cursor:pointer" @click="showLogs = !showLogs">
+        <h3>
+          实时日志
+          <span style="font-size:12px;font-weight:normal;color:#909399;margin-left:4px">
+            {{ showLogs ? '▼' : '▶' }}
+          </span>
+        </h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <el-select v-if="showLogs" v-model="logFilter.level" placeholder="级别" clearable @change="fetchLogs" style="width: 120px">
             <el-option label="INFO" value="INFO" />
             <el-option label="WARN" value="WARN" />
             <el-option label="ERROR" value="ERROR" />
           </el-select>
+          <el-button size="small" @click.stop="showLogs = !showLogs; if(showLogs) fetchLogs()">
+            {{ showLogs ? '收起' : '查看日志' }}
+          </el-button>
         </div>
       </div>
-      <div class="log-stream">
+      <div v-show="showLogs" class="log-stream">
         <div v-for="(l, i) in logs" :key="i" class="log-line" :class="logLevelClass(l.level)">
-          <span class="time">{{ l.time }}</span>
+          <span class="time">{{ formatTime(l.time) }}</span>
           <span class="level">[{{ l.level }}]</span>
           <span v-if="l.site" class="site">{{ l.site }}</span>
           <span class="msg">{{ l.message }}</span>
@@ -127,7 +164,7 @@
         </el-form-item>
         <el-form-item label="榜单类型">
           <el-select v-model="triggerDialog.form.rankingType">
-            <el-option v-for="t in useMetaStore().rankingTypes" :key="t.code" :label="t.name" :value="t.code" />
+            <el-option v-for="t in meta.rankingTypes" :key="t.code" :label="t.name" :value="t.code" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -140,13 +177,15 @@
     <!-- 任务日志弹窗 -->
     <el-dialog v-model="logDialog.visible" :title="`任务 #${logDialog.taskId} 日志`" width="640px">
       <el-table :data="logDialog.logs" max-height="400">
-        <el-table-column prop="time" label="时间" width="180" />
-        <el-table-column prop="level" label="级别" width="80">
+        <el-table-column prop="time" label="时间" min-width="170">
+          <template #default="{ row }">{{ formatTime(row.time) }}</template>
+        </el-table-column>
+        <el-table-column prop="level" label="级别" min-width="80">
           <template #default="{ row }">
             <el-tag :type="statusType(row.level)" size="small">{{ row.level }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="message" label="消息" />
+        <el-table-column prop="message" label="消息" min-width="200" show-overflow-tooltip />
       </el-table>
     </el-dialog>
   </div>
@@ -177,12 +216,20 @@ const taskData = reactive<{ records: TaskVO[]; total: number; pageNum: number; p
 const taskFilter = reactive({ status: '', pageNum: 1, pageSize: 20 })
 
 const logFilter = reactive({ level: '' })
+const showLogs = ref(false)
 const logs = ref<{ time: string; level: string; site: string; message: string }[]>([])
 
 const triggerDialog = reactive({ visible: false, loading: false, form: { siteCode: '', rankingType: 'daily' } })
 const logDialog = reactive({ visible: false, taskId: 0, logs: [] as any[] })
 
 let timer: any
+
+const formatTime = (t: string | null) => {
+  if (!t) return '-'
+  if (typeof t !== 'string') return String(t)
+  const d = dayjs(t)
+  return d.isValid() ? d.format('MM-DD HH:mm:ss') : t
+}
 
 const statusType = (s: string) => {
   switch (s) {
@@ -232,7 +279,7 @@ const saveSchedule = async () => {
     maxConcurrentTasks: schedule.value!.maxConcurrentTasks,
     taskTimeoutMinutes: schedule.value!.taskTimeoutMinutes
   })
-  ElMessage.success('已保存,5 分钟内 Python 生效')
+  ElMessage.success('已保存，5 分钟内 Python 生效')
 }
 
 const triggerSite = (siteCode: string) => {
@@ -279,10 +326,10 @@ const viewLog = async (id: number) => {
 
 onMounted(async () => {
   await meta.loadAll()
-  await Promise.all([fetchSiteStatus(), fetchSchedule(), fetchTasks(), fetchLogs()])
+  await Promise.all([fetchSiteStatus(), fetchSchedule(), fetchTasks()])
   timer = setInterval(() => {
     now.value = dayjs().format('YYYY-MM-DD HH:mm:ss')
-    fetchLogs()
+    if (showLogs.value) fetchLogs()
     if (taskData.records.some(t => t.status === 'pending' || t.status === 'running')) {
       fetchTasks()
     }
@@ -293,22 +340,80 @@ onUnmounted(() => clearInterval(timer))
 </script>
 
 <style scoped>
-.page { max-width: 1400px; margin: 0 auto; }
+.page {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
 .now { color: #909399; }
 .block { margin-bottom: 16px; }
-.row-between { display: flex; justify-content: space-between; align-items: center; }
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .site-card { margin-bottom: 8px; }
 .site-head { display: flex; justify-content: space-between; align-items: center; }
+
 .mt { margin-top: 8px; }
 .warn { color: #f56c6c; font-size: 12px; }
-.time-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+
+.time-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.table-wrap { width: 100%; overflow-x: auto; }
+
 .pager { margin-top: 12px; justify-content: flex-end; display: flex; }
-.log-stream { max-height: 360px; overflow-y: auto; background: #1e1e1e; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 12px; }
-.log-line { color: #d4d4d4; line-height: 1.6; }
+
+.progress-cell {
+  display: flex;
+  align-items: center;
+  min-width: 100px;
+}
+
+.progress-text { color: #909399; font-size: 13px; }
+
+.log-stream {
+  max-height: 360px;
+  overflow-y: auto;
+  background: #1e1e1e;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.log-line {
+  color: #d4d4d4;
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .log-line .time { color: #858585; margin-right: 8px; }
 .log-line .level { margin-right: 8px; }
 .log-line .site { color: #4ec9b0; margin-right: 8px; }
+
 .log-info { color: #d4d4d4; }
 .log-warn { color: #dcdcaa; }
 .log-error { color: #f48771; }
+
+:deep(.el-progress-bar__innerText) { font-size: 11px; }
+
+@media (max-width: 576px) {
+  .log-stream { max-height: 240px; font-size: 11px; }
+  .log-line .time { display: none; }
+  .row-between h3 { font-size: 15px; }
+}
 </style>

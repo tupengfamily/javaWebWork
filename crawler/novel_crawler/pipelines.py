@@ -276,8 +276,29 @@ class RankingInsertPipeline:
             # 2. 拿 novel_id
             novel_id = self._get_novel_id(conn, site_id, item.novel_external_id)
             if novel_id is None:
-                # 理论上 NovelUpsertPipeline 已先处理过 novel
-                raise DropItem(f"novel {item.site_code}/{item.novel_external_id} not in db")
+                # novel 还没入库 → 占位创建(让 ranking 能先入库)
+                # 占位 title 用"site_code:external_id",后续详情页 NovelUpsertPipeline 会覆盖
+                placeholder_title = f"{item.site_code}:{item.novel_external_id}"
+                placeholder_url = ""
+                if item.site_code == "douban":
+                    placeholder_url = f"https://book.douban.com/subject/{item.novel_external_id}/"
+                elif item.site_code == "dangdang":
+                    placeholder_url = f"http://product.dangdang.com/{item.novel_external_id}.html"
+                elif item.site_code == "baidu":
+                    placeholder_url = f"https://www.baidu.com/s?wd={item.novel_external_id}"
+                conn.execute(text("""
+                    INSERT INTO novel
+                      (site_id, external_id, title, author, novel_url, status, first_seen, last_crawl_time)
+                    VALUES
+                      (:site_id, :eid, :title, '未知', :url, 'ongoing', NOW(3), NOW(3))
+                    ON DUPLICATE KEY UPDATE last_crawl_time = NOW(3)
+                """), {
+                    "site_id": site_id, "eid": item.novel_external_id,
+                    "title": placeholder_title, "url": placeholder_url,
+                })
+                novel_id = self._get_novel_id(conn, site_id, item.novel_external_id)
+                if novel_id is None:
+                    raise DropItem(f"failed to create placeholder novel for {item.site_code}/{item.novel_external_id}")
             # 3. INSERT ranking_record
             conn.execute(text("""
                 INSERT INTO ranking_record

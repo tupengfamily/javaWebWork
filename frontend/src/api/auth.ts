@@ -5,6 +5,11 @@ export interface LoginRequest {
   password: string
 }
 
+export interface RegisterRequest {
+  username: string
+  password: string
+}
+
 export interface LoginResponse {
   token: string
   expiresIn: number
@@ -13,6 +18,9 @@ export interface LoginResponse {
 
 export const login = (data: LoginRequest) =>
   request.post<any, LoginResponse>('/auth/login', data)
+
+export const register = (data: RegisterRequest) =>
+  request.post<any, LoginResponse>('/auth/register', data)
 
 export const logout = () => request.post('/auth/logout')
 

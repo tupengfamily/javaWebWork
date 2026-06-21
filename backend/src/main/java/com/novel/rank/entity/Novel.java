@@ -20,7 +20,9 @@ public class Novel {
     private Integer wordCount;
     private String status;
     private String description;
-    private String tags;   // rich-crawler-data: 逗号分隔标签 (2-8 个)
+    private String tags;         // rich-crawler-data: 逗号分隔标签 (2-8 个)
+    private String outline;      // 故事大纲
+    private String characters;   // 角色说明
     private LocalDateTime firstSeen;
     private LocalDateTime lastCrawlTime;
     private LocalDateTime createdAt;
@@ -50,6 +52,10 @@ public class Novel {
     public void setDescription(String description) { this.description = description; }
     public String getTags() { return tags; }
     public void setTags(String tags) { this.tags = tags; }
+    public String getOutline() { return outline; }
+    public void setOutline(String outline) { this.outline = outline; }
+    public String getCharacters() { return characters; }
+    public void setCharacters(String characters) { this.characters = characters; }
     public LocalDateTime getFirstSeen() { return firstSeen; }
     public void setFirstSeen(LocalDateTime firstSeen) { this.firstSeen = firstSeen; }
     public LocalDateTime getLastCrawlTime() { return lastCrawlTime; }

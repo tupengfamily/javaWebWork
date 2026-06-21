@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleAll(Exception ex) {
         log.error("unexpected error", ex);
-        return Result.error(ErrorCode.INTERNAL_ERROR.getCode(), "server error: " + ex.getMessage());
+        return Result.error(ErrorCode.INTERNAL_ERROR.getCode(), "服务器内部错误，请稍后重试");
     }
 
     private String fieldErrorToStr(FieldError fe) {

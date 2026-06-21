@@ -10,8 +10,9 @@ BOT_NAME = "novel_crawler"
 SPIDER_MODULES = ["novel_crawler.spiders"]
 NEWSPIDER_MODULE = "novel_crawler.spiders"
 
-# 不遵守 robots.txt(小说站点通常不允许)
-ROBOTSTXT_OBEY = False
+# 遵守 robots.txt(从环境变量控制,生产环境应遵守)
+# CRAWLER_OBEY_ROBOTS=true/false, 默认 true
+ROBOTSTXT_OBEY = os.getenv("CRAWLER_OBEY_ROBOTS", "true").lower() == "true"
 
 # ---- 并发控制(适当降低,避免触发反爬) ----
 CONCURRENT_REQUESTS = 4

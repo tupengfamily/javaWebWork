@@ -1,49 +1,99 @@
 # 二次开发指南
 
 > 本文档面向需要修改/扩展本项目的开发者。
+> 启动运行见 [quickstart.md](./quickstart.md)，常见问题见 [troubleshooting.md](./troubleshooting.md)。
 
 ## 1. 开发环境搭建
 
-### 1.1 本地开发(不用 Docker)
+### 1.1 本地开发（不用 Docker）
 
 适合快速调试某个模块。
 
-**MySQL**:
-```bash
-docker run -d --name novel-mysql -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=root123 \
-  -e MYSQL_DATABASE=novel_rank \
-  -e MYSQL_USER=novel -e MYSQL_PASSWORD=novel123 \
-  -v $PWD/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro \
+**环境要求**：
+
+| 组件 | 版本 | Windows 典型路径 |
+|------|------|-------------------|
+| JDK | 17 | `C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot\` |
+| MySQL | 8.0 | `D:\MySQL\`（或 Docker 起） |
+| Python | 3.10+ | `C:\Users\<user>\AppData\Local\Programs\Python\Python314\` |
+| Node.js | 18+ | 系统 PATH |
+
+> JDK 17 是硬性要求。JDK 21+ 会导致 MyBatis 兼容问题。
+
+**MySQL（三选一）**：
+
+```powershell
+# 选项 A：已有本地 MySQL 8.0（推荐）
+& "D:\MySQL\bin\mysql.exe" -unovel -pnovel123 < db\init.sql
+
+# 选项 B：Docker 单独起 MySQL（不占 3306 端口）
+docker run -d --name novel-mysql -p 3307:3306 `
+  -e MYSQL_ROOT_PASSWORD=root123 `
+  -e MYSQL_DATABASE=novel_rank `
+  -e MYSQL_USER=novel -e MYSQL_PASSWORD=novel123 `
+  -v "$PWD\db\init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro" `
   mysql:8.0
+
+# 选项 C：安装包安装
+# 下载 https://dev.mysql.com/downloads/installer/
+# 安装后执行 db\init.sql
 ```
 
-**后端** (用 IDE 直接 Run `NovelRankApplication`):
+**后端（IDE 直接 Run `NovelRankApplication`）**：
 - IDE 装 Spring Boot 插件
-- `application.yml` 默认读 `application-dev.yml`,连 localhost:3306
+- `application-dev.yml` 默认连 `localhost:3306`，用户 `novel` / 密码 `novel123`
+- 如 MySQL 端口不同，在 Run Configuration 设环境变量：
+  ```
+  MYSQL_PORT=3307
+  ```
 
-**前端**:
-```bash
-cd frontend
-npm install
-npm run dev    # http://localhost:5173,自动代理 /api 到 8080
+```powershell
+# 命令行方式
+cd backend
+mvn -B clean package -DskipTests
+& "C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot\bin\java.exe" -jar target\app.jar --spring.profiles.active=dev
 ```
 
-**爬虫**:
-```bash
+**前端**：
+```powershell
+cd frontend
+npm install          # 首次
+npm run dev          # http://localhost:5173，自动代理 /api → 8080
+```
+
+**爬虫**：
+```powershell
 cd crawler
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt    # 首次
+set DB_HOST=localhost
+set DB_PORT=3306
+set DB_USER=novel
+set DB_PASSWORD=novel123
+set DB_NAME=novel_rank
 python main.py
 ```
 
-### 1.2 Docker 开发
+### 1.2 一键本地启动
 
-```bash
-docker compose up -d --build
-# 改代码后:
-docker compose up -d --build backend
+```powershell
+# 启动全部（后端 + 爬虫 + 前端）
+.\scripts\dev.bat start all
+
+# 仅启动部分
+.\scripts\dev.bat start backend
+.\scripts\dev.bat start frontend
+```
+
+### 1.3 Docker 开发
+
+```powershell
+# 首次构建并启动
+docker compose build
+docker compose up -d
+
+# 改代码后重构建单个服务
+docker compose build backend
+docker compose up -d backend
 ```
 
 ## 2. 加新站点(完整流程)

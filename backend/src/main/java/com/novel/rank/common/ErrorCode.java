@@ -10,6 +10,7 @@ public enum ErrorCode {
     INTERNAL_ERROR(500, "服务器异常"),
     INVALID_CREDENTIALS(1001, "用户名或密码错误"),
     TOKEN_EXPIRED(1002, "token 已过期"),
+    DUPLICATE_USERNAME(1003, "用户名已存在"),
     DUPLICATE_TASK(2001, "该任务已在队列中"),
     INVALID_SCHEDULE_TIME(2002, "时间格式错误");
 

@@ -14,6 +14,8 @@ export interface NovelVO {
   status: string
   description: string      // rich-crawler-data: 简介
   tags: string             // rich-crawler-data: 逗号分隔标签
+  outline: string          // 故事大纲
+  characters: string       // 角色说明
   firstSeen: string
   lastCrawlTime: string
 }

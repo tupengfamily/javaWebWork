@@ -4,3 +4,4 @@ sqlalchemy>=2.0
 pymysql>=1.1
 cryptography>=42.0
 python-dotenv>=1.0
+brotlicffi>=1.2.0  # douban 返回 br 压缩,Scrapy 需要此包解码

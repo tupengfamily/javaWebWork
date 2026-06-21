@@ -3,6 +3,7 @@ package com.novel.rank.controller;
 import com.novel.rank.common.Result;
 import com.novel.rank.dto.LoginRequest;
 import com.novel.rank.dto.LoginResponse;
+import com.novel.rank.dto.RegisterRequest;
 import com.novel.rank.dto.UserInfo;
 import com.novel.rank.security.AuthenticatedUser;
 import com.novel.rank.service.AuthService;
@@ -22,6 +23,11 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public Result<LoginResponse> register(@RequestBody @Valid RegisterRequest req) {
+        return Result.success(authService.register(req));
     }
 
     @PostMapping("/login")

@@ -9,6 +9,9 @@ SITE_TO_SPIDER: dict[str, str] = {
     "qidian":   "novel_crawler.spiders.qidian.QidianSpider",
     "fanqie":   "novel_crawler.spiders.fanqie.FanqieSpider",
     "zongheng": "novel_crawler.spiders.zongheng.ZonghengSpider",
+    "douban":   "novel_crawler.spiders.douban.DoubanSpider",
+    "baidu":    "novel_crawler.spiders.baidu.BaiduHotSpider",
+    "dangdang": "novel_crawler.spiders.dangdang.DangdangSpider",
 }
 
 

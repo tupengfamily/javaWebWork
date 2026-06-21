@@ -4,7 +4,7 @@
       <h2>趋势分析</h2>
       <el-form :inline="true" class="filter-bar">
         <el-form-item label="指标">
-          <el-select v-model="metric" style="width: 140px">
+          <el-select v-model="metric" style="width: 120px">
             <el-option label="排名" value="rank" />
             <el-option label="浏览量" value="viewCount" />
             <el-option label="推荐数" value="recCount" />
@@ -14,8 +14,8 @@
           <el-input-number v-model="days" :min="1" :max="90" :step="1" />
           <span class="suffix">天</span>
         </el-form-item>
-        <el-form-item label="小说ID(逗号分隔,最多5个)">
-          <el-input v-model="novelIdsInput" placeholder="如 1,2,3" style="width: 200px" />
+        <el-form-item label="小说ID">
+          <el-input v-model="novelIdsInput" placeholder="多个用,分隔" style="width: 200px" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="onCompare">对比</el-button>
@@ -27,18 +27,20 @@
       <v-chart class="chart" :option="compareOpt" autoresize />
 
       <h3>跨站 TOP 10</h3>
-      <el-table :data="topListData" stripe>
-        <el-table-column prop="rank" label="排名" width="70" align="center" />
-        <el-table-column prop="title" label="书名" min-width="200" />
-        <el-table-column label="站点" width="100">
-          <template #default="{ row }">
-            <el-tag :color="row.color" effect="dark" style="border-color: transparent; color: #fff">{{ row.siteName }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="浏览量" align="right">
-          <template #default="{ row }">{{ formatNum(row.viewCount) }}</template>
-        </el-table-column>
-      </el-table>
+      <div class="table-wrap">
+        <el-table :data="topListData" stripe>
+          <el-table-column prop="rank" label="#" width="60" align="center" />
+          <el-table-column prop="title" label="书名" min-width="160" show-overflow-tooltip />
+          <el-table-column label="站点" min-width="90">
+            <template #default="{ row }">
+              <el-tag :color="row.color" effect="dark" style="border-color: transparent; color: #fff">{{ row.siteName }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="浏览量" min-width="100" align="right">
+            <template #default="{ row }">{{ formatNum(row.viewCount) }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
     </el-card>
   </div>
 </template>
@@ -102,8 +104,34 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page { max-width: 1200px; margin: 0 auto; }
-.filter-bar { margin: 16px 0; }
+.page {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.filter-bar {
+  margin: 16px 0;
+}
+
+.filter-bar :deep(.el-form-item) {
+  margin-bottom: 4px;
+}
+
 .suffix { margin-left: 8px; }
-.chart { height: 380px; }
+
+.chart { height: 380px; width: 100%; }
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .chart { height: 280px; }
+}
+
+@media (max-width: 576px) {
+  .chart { height: 240px; }
+}
 </style>

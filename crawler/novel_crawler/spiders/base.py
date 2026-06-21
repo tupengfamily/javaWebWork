@@ -123,7 +123,11 @@ class BaseSpider(scrapy.Spider):
             self.logger.warning(f"HTTP {response.status} on {url}")
             return False
 
-        body = response.text or ""
+        # 兼容压缩/二进制响应(豆瓣偶尔返回非 text/html)
+        try:
+            body = response.text or ""
+        except AttributeError:
+            body = response.body.decode("utf-8", errors="ignore") if response.body else ""
 
         # 内容过短(可能是 JS 重定向或空白页)
         if len(body) < min_length:

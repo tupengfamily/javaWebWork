@@ -80,6 +80,8 @@ CREATE TABLE novel (
     status          VARCHAR(16)     NOT NULL DEFAULT 'ongoing'  COMMENT 'ongoing/completed',
     description     TEXT            DEFAULT NULL                COMMENT '简介',
     tags            VARCHAR(1024)   DEFAULT NULL                COMMENT '逗号分隔标签(2-8 个,rich-crawler-data 新增)',
+    outline         TEXT            DEFAULT NULL                COMMENT '故事大纲',
+    characters      TEXT            DEFAULT NULL                COMMENT '角色说明',
     first_seen      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3)  COMMENT '首次出现',
     last_crawl_time DATETIME(3)     DEFAULT NULL                COMMENT '最近一次爬取',
     created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -235,9 +237,9 @@ SELECT * FROM ranked WHERE rn = 1;
 -- ============================================================
 
 -- 管理员 (admin / admin123 的 BCrypt 哈希)
--- Hash: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- Hash: $2b$10$sURTJ6kv1cfHps9YTOmOMuLsk2x4wwh0GkYzfQ04HHo2gMR3V.xBW
 INSERT INTO sys_user (username, password_hash, role) VALUES
-('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin');
+('admin', '$2b$10$sURTJ6kv1cfHps9YTOmOMuLsk2x4wwh0GkYzfQ04HHo2gMR3V.xBW', 'admin');
 
 -- 分类字典
 INSERT INTO category (code, name, sort_order) VALUES
@@ -263,13 +265,21 @@ INSERT INTO ranking_type (code, name, description) VALUES
 ('monthly',   '月榜',     '每月热门排行'),
 ('category',  '分类榜',   '按分类筛选的榜单'),
 ('total',     '总榜',     '总热门排行'),
-('all',       '全部榜单', '一次任务产出 daily/monthly/total 三类榜单');
+('all',       '全部榜单', '一次任务产出 daily/monthly/total 三类榜单'),
+('hot',       '热搜榜',   '百度热搜词榜'),
+('bestseller','畅销榜',   '当当图书畅销榜'),
+('newbook',   '新书榜',   '当当新书热卖榜'),
+('fivestars', '好评榜',   '当当五星好评榜'),
+('soaring',   '飙升榜',   '当当销售飙升榜');
 
 -- 站点配置 (spider_class 用 Python 类路径)
 INSERT INTO site (code, name, base_url, spider_class, color, sort_order) VALUES
 ('qidian',   '起点中文网',  'https://www.qidian.com',  'novel_crawler.spiders.qidian.QidianSpider',   '#E72E2C', 1),
 ('fanqie',   '番茄小说',    'https://fanqienovel.com', 'novel_crawler.spiders.fanqie.FanqieSpider',   '#FF6633', 2),
-('zongheng', '纵横中文网',  'https://www.zongheng.com', 'novel_crawler.spiders.zongheng.ZonghengSpider', '#1E9FFF', 3);
+('zongheng', '纵横中文网',  'https://www.zongheng.com', 'novel_crawler.spiders.zongheng.ZonghengSpider', '#1E9FFF', 3),
+('douban',   '豆瓣读书',    'https://book.douban.com',  'novel_crawler.spiders.douban.DoubanSpider',  '#42BD56', 4),
+('baidu',    '百度热搜',    'https://top.baidu.com',    'novel_crawler.spiders.baidu.BaiduHotSpider',  '#2932E1', 5),
+('dangdang', '当当图书榜',  'http://bang.dangdang.com', 'novel_crawler.spiders.dangdang.DangdangSpider','#E5004F', 6);
 
 -- 调度配置 - 默认三次刷新
 -- rich-crawler-data: taskTimeoutMinutes 30→60, crawlAllRankingTypes 增加 yuepiao/newbook/finish

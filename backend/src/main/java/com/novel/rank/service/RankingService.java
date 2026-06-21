@@ -90,6 +90,7 @@ public class RankingService {
 
     public List<Map<String, Object>> topList(int limit, String by, String category) {
         if (limit < 1 || limit > 50) limit = 10;
-        return rankingMapper.selectCrossSiteTop(limit, category);
+        if (by == null || by.isBlank()) by = "viewCount";
+        return rankingMapper.selectCrossSiteTop(limit, by, category);
     }
 }

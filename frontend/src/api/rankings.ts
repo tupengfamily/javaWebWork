@@ -11,6 +11,7 @@ export interface RankingItemVO {
   recCount: number
   wordCount: number
   status: string
+  description: string
   novelUrl: string
   crawlTime?: string
 }

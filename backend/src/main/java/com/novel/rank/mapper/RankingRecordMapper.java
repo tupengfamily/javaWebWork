@@ -32,5 +32,6 @@ public interface RankingRecordMapper extends BaseMapper<RankingRecord> {
                                                     @Param("days") int days);
 
     List<Map<String, Object>> selectCrossSiteTop(@Param("limit") int limit,
+                                                 @Param("by") String by,
                                                  @Param("category") String category);
 }

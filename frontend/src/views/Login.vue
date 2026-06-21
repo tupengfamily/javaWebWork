@@ -1,17 +1,40 @@
 <template>
   <div class="login-page">
     <el-card class="login-card" shadow="always">
-      <h2 class="title">🔐 管理员登录</h2>
+      <h2 class="title">小说数据看板</h2>
+
+      <!-- 模式切换 -->
+      <div class="role-tabs">
+        <div
+          class="role-tab"
+          :class="{ active: mode === 'login' }"
+          @click="switchMode('login')"
+        >登录</div>
+        <div
+          class="role-tab"
+          :class="{ active: mode === 'register' }"
+          @click="switchMode('register')"
+        >注册</div>
+      </div>
+      <p class="role-desc">
+        {{ mode === 'login' ? '已有账号，请输入用户名密码登录' : '新用户注册，注册后自动登录' }}
+      </p>
+
       <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" />
+          <el-input v-model="form.username" placeholder="用户名（2-32字）" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
+          <el-input v-model="form.password" type="password" placeholder="密码（6-64字）" show-password />
         </el-form-item>
-        <el-button type="primary" native-type="submit" :loading="loading" class="submit" @click="onSubmit">登 录</el-button>
+        <el-form-item v-if="mode === 'register'" prop="password2">
+          <el-input v-model="form.password2" type="password" placeholder="确认密码" show-password />
+        </el-form-item>
+        <el-button type="primary" native-type="submit" :loading="loading" class="submit">
+          {{ mode === 'login' ? '登 录' : '注 册' }}
+        </el-button>
       </el-form>
-      <p class="hint">公开页面无需登录</p>
+      <p class="hint">排行榜和趋势分析无需登录即可查看</p>
     </el-card>
   </div>
 </template>
@@ -27,10 +50,36 @@ const router = useRouter()
 const route = useRoute()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const form = reactive({ username: '', password: '' })
-const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+const mode = ref<'login' | 'register'>('login')
+
+const form = reactive({ username: '', password: '', password2: '' })
+
+const validatePass2 = (_r: any, v: string, cb: any) => {
+  if (!v) { cb(new Error('请确认密码')); return }
+  if (v !== form.password) { cb(new Error('两次密码不一致')); return }
+  cb()
+}
+
+const rules = reactive({
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 32, message: '用户名长度 2-32', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 64, message: '密码长度 6-64', trigger: 'blur' }
+  ],
+  password2: [
+    { validator: validatePass2, trigger: 'blur' }
+  ]
+})
+
+const switchMode = (m: 'login' | 'register') => {
+  mode.value = m
+  form.username = ''
+  form.password = ''
+  form.password2 = ''
+  formRef.value?.clearValidate()
 }
 
 const onSubmit = async () => {
@@ -39,10 +88,18 @@ const onSubmit = async () => {
     if (!valid) return
     loading.value = true
     try {
-      await auth.login(form.username, form.password)
-      ElMessage.success('登录成功')
-      const redirect = (route.query.redirect as string) || '/rankings'
-      router.push(redirect)
+      if (mode.value === 'register') {
+        await auth.register(form.username, form.password)
+        ElMessage.success('注册成功，已自动登录')
+        router.push('/rankings')
+      } else {
+        await auth.login(form.username, form.password)
+        ElMessage.success('登录成功')
+        const isAdmin = auth.isAdmin
+        const defaultPath = isAdmin ? '/admin/tasks' : '/rankings'
+        const redirect = (route.query.redirect as string) || defaultPath
+        router.push(redirect)
+      }
     } catch {
       // 错误已由拦截器处理
     } finally {
@@ -55,11 +112,76 @@ const onSubmit = async () => {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+  box-sizing: border-box;
 }
-.login-card { width: 400px; padding: 16px 8px; }
-.title { text-align: center; margin: 0 0 24px; color: #303133; }
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 24px 16px;
+}
+
+.title {
+  text-align: center;
+  margin: 0 0 20px;
+  color: #303133;
+}
+
+.role-tabs {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #dcdfe6;
+  margin-bottom: 8px;
+}
+
+.role-tab {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  cursor: pointer;
+  color: #606266;
+  background: #f5f7fa;
+  transition: all 0.2s;
+  font-size: 14px;
+  user-select: none;
+}
+
+.role-tab.active {
+  background: #409eff;
+  color: #fff;
+}
+
+.role-tab:first-child {
+  border-right: 1px solid #dcdfe6;
+}
+
+.role-desc {
+  text-align: center;
+  color: #909399;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
 .submit { width: 100%; }
-.hint { text-align: center; color: #909399; font-size: 12px; margin: 16px 0 0; }
+
+.hint {
+  text-align: center;
+  color: #909399;
+  font-size: 12px;
+  margin: 16px 0 0;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    max-width: 100%;
+    padding: 16px 12px;
+  }
+  .title { font-size: 18px; }
+}
 </style>

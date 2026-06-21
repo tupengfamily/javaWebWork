@@ -1,117 +1,101 @@
-# Scripts
+# Scripts 说明
 
-> 4 对核心脚本,覆盖**本地运行 / 构建 / 部署 / 停止**。
-> 完整文档见 [docs/quickstart.md](../docs/quickstart.md) + [docs/deployment.md](../docs/deployment.md)。
+> 4 对核心脚本，覆盖本地运行 / 构建 / 部署 / 停止。
+> 完整文档见 [docs/quickstart.md](../docs/quickstart.md)。
 
 ## 脚本清单
 
-| 脚本 | 用途 | 何时用 |
-|---|---|---|
-| `dev.sh` / `dev.bat` | 本地运行(无 Docker) | 日常开发、IDE Debug |
-| `build.sh` / `build.bat` | 仅构建 Docker 镜像(不启动) | 改完代码要重新 build 时 |
-| `start.sh` / `start.bat` | 部署(Docker 拉起整个栈) | 演示 / 测试 / 生产部署 |
-| `stop.sh` / `stop.bat` | 停止 Docker 栈 | 收工 / 重启前 |
-
-> 已删除 `setup` / `logs` / `reset-db` / `test` 脚本(冗余,见下方"替代方案")。
+| 脚本 (Windows) | 脚本 (Linux/macOS) | 用途 | 何时用 |
+|---|---|---|---|
+| `dev.bat` | `dev.sh` | 本地运行（无 Docker） | 日常开发、IDE Debug |
+| `build.bat` | `build.sh` | 仅构建 Docker 镜像 | 改完代码要重新 build |
+| `start.bat` | `start.sh` | Docker 拉起整个栈 | 演示 / 测试 / 生产部署 |
+| `stop.bat` | `stop.sh` | 停止 Docker 栈 | 收工 / 重启前 |
 
 ## 用法
 
-### 本地运行(无 Docker)
+### 本地运行（无 Docker）
+
+```powershell
+# Windows
+.\scripts\dev.bat start all          # 启动所有
+.\scripts\dev.bat start backend      # 仅后端
+.\scripts\dev.bat start frontend     # 仅前端
+.\scripts\dev.bat start crawler      # 仅爬虫
+
+.\scripts\dev.bat status             # 查看状态
+.\scripts\dev.bat stop all           # 停止所有
+.\scripts\dev.bat restart backend    # 重启后端
+.\scripts\dev.bat logs backend       # 查看后端日志
+.\scripts\dev.bat logs crawler       # 查看爬虫日志
+```
 
 ```bash
-# 启后端 + 爬虫 + 前端
-./scripts/dev.sh start
-
-# 只启后端
-./scripts/dev.sh start backend
-
-# 状态
+# Linux/macOS
+./scripts/dev.sh start all
 ./scripts/dev.sh status
-
-# 重启
-./scripts/dev.sh restart
-
-# 停
-./scripts/dev.sh stop
-
-# 看后端日志(实时)
+./scripts/dev.sh stop all
 ./scripts/dev.sh logs backend
 ```
 
-**Windows**:
+### Docker 部署
 
-```bat
-scripts\dev.bat start
-scripts\dev.bat status
-scripts\dev.bat stop
-scripts\dev.bat logs backend
+```powershell
+# Windows - 首次启动
+copy .env.example .env
+.\scripts\start.bat
+
+# 自定义构建
+.\scripts\build.bat                  # 构建所有镜像
+.\scripts\build.bat backend          # 仅构建后端
+
+# 停止
+.\scripts\stop.bat                   # 停止（保留数据）
+.\scripts\stop.bat --volumes         # 停止 + 删除数据卷（危险）
 ```
 
-### 构建 Docker 镜像
-
 ```bash
-# 构建全部服务
-./scripts/build.sh
-
-# 构建后端 + 前端
-./scripts/build.sh backend frontend
-
-# 强制重建(代码改了)
-./scripts/build.sh --no-cache
-```
-
-**Windows**: `scripts\build.bat [services...]`
-
-### 部署(Docker up)
-
-```bash
-# 用现有镜像启动
+# Linux/macOS
+cp .env.example .env
 ./scripts/start.sh
-
-# 启动前先构建
-./scripts/start.sh --build
-
-# 启动前强制重建
-./scripts/start.sh --no-cache
-
-# 只启动某个服务
-./scripts/start.sh backend
+./scripts/stop.sh
+./scripts/stop.sh --volumes
 ```
 
-**Windows**: `scripts\start.bat [--build]`
+### 常用开发循环
 
-### 停止
+**改后端代码**：
+```powershell
+# 本地模式
+.\scripts\dev.bat restart backend
 
-```bash
-./scripts/stop.sh                # 停(保留数据)
-./scripts/stop.sh --volumes      # 停 + 删数据(危险)
+# Docker 模式
+docker compose build backend && docker compose up -d backend
 ```
 
-**Windows**: `scripts\stop.bat [--volumes]`
+**改前端代码**：Vite HMR 自动热更新，保存即生效。
 
-## 已删脚本的替代方案
+**改爬虫代码**：
+```powershell
+# 本地模式
+.\scripts\dev.bat restart crawler
 
-| 旧脚本 | 替代 |
-|---|---|
-| `setup.sh` | 首次跑: `cp .env.example .env`(首次 `start.sh` 会自动 copy)+ `mvn package`(dev.sh 自动) |
-| `logs.sh` | `docker compose logs -f` 或 `./scripts/dev.sh logs backend` |
-| `reset-db.sh` | `docker compose down -v && docker compose up -d`(跑 init.sql 重新导入) |
-| `test.sh` | 后端:`cd backend && mvn test` / 爬虫:`cd crawler && pytest` / 前端:`cd frontend && npm run test` |
-| `build.sh` | **保留**(本表) |
+# Docker 模式
+docker compose build crawler && docker compose up -d crawler
+```
 
-## 平台说明
+## 日志位置
 
-| 平台 | 用 `.sh` | 用 `.bat` |
-|---|---|---|
-| Linux | ✅ 原生 | ❌ |
-| macOS | ✅ 原生 | ❌ |
-| Windows(Git Bash) | ✅ 推荐 | ✅ 也支持 |
-| Windows(cmd) | ❌ | ✅ 推荐 |
+| 模式 | 日志路径 |
+|------|----------|
+| 本地 dev | `logs\backend.log` / `logs\crawler.log` / `logs\frontend.log` |
+| Docker | `docker compose logs -f [service]` |
 
-Windows 用户推荐装 **Git for Windows**(自带 Git Bash),用 `.sh` 脚本更省事。
-不想装 Git Bash 也行,用 `.bat` 即可。
+## 环境要求
 
-## 故障排查
+`dev.bat` 会自动查找 JDK 17：
+1. `C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot\bin\java.exe`
+2. `%JAVA_HOME%\bin\java.exe`
+3. PATH 中的 `java`
 
-- 脚本失败?先看 [docs/troubleshooting.md](../docs/troubleshooting.md)
-- 想看完整 8 脚本版历史?`git log -- scripts/`
+`start.bat` 会自动检查 Docker 和 docker compose，缺失时给出提示。

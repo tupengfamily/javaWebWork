@@ -77,6 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isPublicPath(String path) {
         if (path == null) return true;
         return path.startsWith("/api/auth/login")
+                || path.startsWith("/api/auth/register")
                 || path.startsWith("/api/auth/logout")
                 || path.startsWith("/api/sites")
                 || path.startsWith("/api/rankings")

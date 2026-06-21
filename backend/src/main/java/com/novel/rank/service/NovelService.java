@@ -40,7 +40,8 @@ public class NovelService {
         LambdaQueryWrapper<RankingRecord> q = new LambdaQueryWrapper<RankingRecord>()
                 .eq(RankingRecord::getNovelId, id)
                 .orderByDesc(RankingRecord::getCrawlTime);
-        if (type != null && !type.isBlank()) q.eq(RankingRecord::getRankingType, type);
+        // 'all' 表示全部榜单,不按类型过滤
+        if (type != null && !type.isBlank() && !"all".equals(type)) q.eq(RankingRecord::getRankingType, type);
         if (startTime != null && !startTime.isBlank()) q.ge(RankingRecord::getCrawlTime, startTime);
         if (endTime != null && !endTime.isBlank()) q.le(RankingRecord::getCrawlTime, endTime);
         Page<RankingRecord> res = rankingRecordMapper.selectPage(p, q);

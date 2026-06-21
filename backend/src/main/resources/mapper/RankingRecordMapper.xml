@@ -4,6 +4,7 @@
 
     <!-- 最新榜单 Top N (某站点某榜单类型最近一次抓取) -->
     <!-- 过滤 category 时用 COALESCE(r.category, n.category),兼容历史 ranking_record.category 为 NULL 的数据 -->
+    <!-- rankingType 为 null/空时不过滤,ranking_type='all' 也走不过滤分支(避免误查) -->
     <select id="selectLatestRanking" resultType="java.util.Map">
         SELECT
             r.`rank`           AS `rank`,
@@ -15,13 +16,16 @@
             n.novel_url        AS novelUrl,
             n.word_count       AS wordCount,
             n.status           AS status,
+            n.description      AS description,
             r.view_count       AS viewCount,
             r.rec_count        AS recCount,
             r.crawl_time       AS crawlTime
         FROM v_latest_rank_snapshot r
         JOIN novel n ON r.novel_id = n.id
         <where>
-            r.ranking_type = #{rankingType}
+            <if test="rankingType != null and rankingType != '' and rankingType != 'all'">
+                AND r.ranking_type = #{rankingType}
+            </if>
             AND r.site_id = (SELECT id FROM site WHERE code = #{siteCode})
             <if test="category != null and category != ''">
                 AND COALESCE(r.category, n.category) = #{category}
@@ -39,7 +43,9 @@
         FROM v_latest_rank_snapshot r
         JOIN novel n ON r.novel_id = n.id
         <where>
-            r.ranking_type = #{rankingType}
+            <if test="rankingType != null and rankingType != '' and rankingType != 'all'">
+                AND r.ranking_type = #{rankingType}
+            </if>
             AND r.site_id = (SELECT id FROM site WHERE code = #{siteCode})
             <if test="category != null and category != ''">
                 AND COALESCE(r.category, n.category) = #{category}
@@ -51,6 +57,7 @@
     </select>
 
     <!-- 单小说时间序列 -->
+    <!-- rankingType 为空/'all' 时不过滤(返回所有榜单类型) -->
     <select id="selectNovelTrend" resultType="java.util.Map">
         SELECT
             DATE_FORMAT(crawl_time, '%m-%d %H:%i') AS `time`,
@@ -59,7 +66,9 @@
             rec_count  AS recCount
         FROM ranking_record
         WHERE novel_id = #{novelId}
-          AND ranking_type = #{rankingType}
+          <if test="rankingType != null and rankingType != '' and rankingType != 'all'">
+              AND ranking_type = #{rankingType}
+          </if>
           AND crawl_time >= DATE_SUB(NOW(3), INTERVAL #{days} DAY)
         ORDER BY crawl_time ASC
     </select>
@@ -91,6 +100,7 @@
     </select>
 
     <!-- 跨站 TOP N(基于最新一次 daily 抓取) -->
+    <!-- by 可选 viewCount/recCount/rank,默认 viewCount 降序 -->
     <select id="selectCrossSiteTop" resultType="java.util.Map">
         SELECT
             r.`rank`     AS `rank`,
@@ -99,7 +109,8 @@
             s.code       AS siteCode,
             s.name       AS siteName,
             s.color      AS color,
-            r.view_count AS viewCount
+            r.view_count AS viewCount,
+            r.rec_count  AS recCount
         FROM v_latest_rank_snapshot r
         JOIN novel n ON r.novel_id = n.id
         JOIN site  s ON r.site_id  = s.id
@@ -109,7 +120,12 @@
                 AND r.category = #{category}
             </if>
         </where>
-        ORDER BY r.view_count DESC
+        ORDER BY
+        <choose>
+            <when test="by == 'recCount'">r.rec_count DESC</when>
+            <when test="by == 'rank'">r.`rank` ASC</when>
+            <otherwise>r.view_count DESC</otherwise>
+        </choose>
         LIMIT #{limit}
     </select>
 

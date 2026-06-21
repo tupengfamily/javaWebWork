@@ -5,6 +5,7 @@ import com.novel.rank.common.BusinessException;
 import com.novel.rank.common.ErrorCode;
 import com.novel.rank.dto.LoginRequest;
 import com.novel.rank.dto.LoginResponse;
+import com.novel.rank.dto.RegisterRequest;
 import com.novel.rank.dto.UserInfo;
 import com.novel.rank.entity.SysUser;
 import com.novel.rank.mapper.SysUserMapper;
@@ -25,6 +26,31 @@ public class AuthService {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+    }
+
+    public LoginResponse register(RegisterRequest req) {
+        Long count = userMapper.selectCount(
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, req.getUsername())
+        );
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.DUPLICATE_USERNAME);
+        }
+
+        SysUser user = new SysUser();
+        user.setUsername(req.getUsername());
+        user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        user.setRole("user");
+        user.setEnabled(true);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        userMapper.insert(user);
+
+        String token = jwtUtil.generate(user.getId(), user.getUsername(), user.getRole());
+        return new LoginResponse(
+                token,
+                jwtUtil.getExpireSeconds(),
+                new UserInfo(user.getId(), user.getUsername(), user.getRole())
+        );
     }
 
     public LoginResponse login(LoginRequest req) {
