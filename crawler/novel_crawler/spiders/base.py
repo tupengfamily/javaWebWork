@@ -137,6 +137,7 @@ class BaseSpider(scrapy.Spider):
             return False
 
         # 检测反爬特征
+        # 注：仅扫描 body 前 2000 字符以降低 CPU 开销，反爬标记通常在头部位置
         body_lower = body[:2000].lower()
         for marker in self._ANTI_BOT_MARKERS:
             if marker.lower() in body_lower:

@@ -216,7 +216,7 @@ class NovelUpsertPipeline:
 
 
 # ============================================================
-# 3. RankingInsertPipeline - 写排行榜快照
+# 5. RankingInsertPipeline - 写排行榜快照
 # ============================================================
 class RankingInsertPipeline:
     """Ranking 表纯 INSERT(时序数据,只追加不更新)
@@ -323,7 +323,7 @@ class RankingInsertPipeline:
 
 
 # ============================================================
-# 4. CrawlLogPipeline - 抓取进度日志
+# 6. CrawlLogPipeline - 抓取进度日志
 # ============================================================
 class CrawlLogPipeline:
     """每收到 N 条 item 写一次进度日志,避免日志爆炸

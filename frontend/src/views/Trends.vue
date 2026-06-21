@@ -17,7 +17,7 @@
         </div>
       </div>
       <v-chart v-if="overview.length" class="chart" :option="overviewPieOpt" autoresize />
-      <el-empty v-if="!overview.length" description="暂无概览数据" :image-size="60" />
+      <el-empty v-else description="暂无概览数据" :image-size="60" />
     </el-card>
 
     <div class="two-col">
@@ -27,7 +27,7 @@
       <el-card class="block">
         <h3>分类热度</h3>
         <v-chart v-if="categories.length" class="chart" :option="categoryBarOpt" autoresize />
-        <el-empty v-if="!categories.length" description="暂无分类数据" :image-size="60" />
+        <el-empty v-else description="暂无分类数据" :image-size="60" />
       </el-card>
 
       <!-- ============================================================
@@ -50,7 +50,12 @@
             <el-table-column prop="rank" label="#" width="48" align="center" />
             <el-table-column prop="title" label="书名" min-width="140" show-overflow-tooltip>
               <template #default="{ row }">
-                <span class="link-title" @click="addToCompare(row.novelId, row.title)" :title="'添加到趋势对比'">{{ row.title }}</span>
+                <button type="button" class="link-title link-btn"
+                  :title="'添加到趋势对比：' + row.title"
+                  :aria-label="'添加《' + row.title + '》到趋势对比'"
+                  @click="addToCompare(row.novelId, row.title)">
+                  {{ row.title }}
+                </button>
               </template>
             </el-table-column>
             <el-table-column label="站点" width="90">
@@ -79,11 +84,12 @@
             filterable
             remote
             reserve-keyword
-            placeholder="搜索书名或作者..."
+            placeholder="搜索书名或作者…"
             :remote-method="onSearchNovels"
             :loading="searchLoading"
             style="flex:1;max-width:500px"
             value-key="novelId"
+            aria-label="选择要对比的小说"
             @change="onCompareSelectionChange"
             @remove-tag="onRemoveCompareNovel"
           >
@@ -99,7 +105,7 @@
             <el-option label="推荐数" value="recCount" />
             <el-option label="排名" value="rank" />
           </el-select>
-          <el-input-number v-model="compareDays" :min="1" :max="90" :step="1" size="small" style="width:90px" />
+          <el-input-number v-model="compareDays" :min="1" :max="90" :step="1" size="small" style="width:90px" aria-label="对比天数" />
           <span class="suffix">天</span>
           <el-button type="primary" size="small" @click="onCompare" :disabled="compareNovelIds.length === 0">对比</el-button>
         </div>
@@ -110,7 +116,7 @@
         </div>
       </div>
       <v-chart v-if="series.length > 0" class="chart" :option="compareOpt" autoresize />
-      <el-empty v-if="series.length === 0" description="选择小说后点击「对比」查看趋势" :image-size="80" />
+      <el-empty v-else description="选择小说后点击「对比」查看趋势" :image-size="80" />
     </el-card>
   </div>
 </template>
@@ -122,7 +128,9 @@ import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, PieChart, BarChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { ElMessage } from 'element-plus'
 import { compareTrend, topList, fetchTrendOverview, fetchCategoryHeat, searchNovels, type SiteOverviewVO, type CategoryHeatVO, type TrendSeries } from '@/api/rankings'
+import { formatNum, formatShortTime } from '@/utils/format'
 import dayjs from 'dayjs'
 
 use([CanvasRenderer, LineChart, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent])
@@ -133,11 +141,7 @@ use([CanvasRenderer, LineChart, PieChart, BarChart, GridComponent, TooltipCompon
 const overview = ref<SiteOverviewVO[]>([])
 const categories = ref<CategoryHeatVO[]>([])
 
-const formatShort = (t: string | null) => {
-  if (!t) return '-'
-  const d = dayjs(t)
-  return d.isValid() ? d.format('MM-DD HH:mm') : '-'
-}
+const formatShort = formatShortTime
 
 const overviewPieOpt = computed(() => ({
   tooltip: { trigger: 'item', formatter: '{b}: {c} 本 ({d}%)' },
@@ -237,7 +241,11 @@ const onCompareSelectionChange = (ids: number[]) => {
 }
 
 const addToCompare = (novelId: number, title: string) => {
-  if (compareTitles.value.length >= 5) return
+  // 上限提示，避免用户点了多次但界面没反应
+  if (compareTitles.value.length >= 5) {
+    ElMessage.warning('最多对比 5 本小说')
+    return
+  }
   if (!compareTitles.value.find(t => t.novelId === novelId)) {
     compareTitles.value.push({ novelId, title })
     compareNovelIds.value = compareTitles.value.map(t => t.novelId)
@@ -265,12 +273,7 @@ watch([compareMetric, compareDays], () => {
 /* ============================================================
  * 工具
  * ============================================================ */
-const formatNum = (n: number) => {
-  if (n === undefined || n === null) return '-'
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(1) + '万'
-  return String(n)
-}
+// formatNum / formatShort 已抽离到 @/utils/format
 
 onMounted(async () => {
   const [ov, cat] = await Promise.all([fetchTrendOverview(), fetchCategoryHeat()])
@@ -415,6 +418,21 @@ onMounted(async () => {
 
 .link-title:hover {
   text-decoration: underline;
+}
+
+/* 链接式 button —— 去掉原生 button 视觉，保留可访问性 */
+.link-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+}
+.link-btn:focus-visible {
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .table-wrap {

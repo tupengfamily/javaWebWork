@@ -4,17 +4,23 @@
       <h2 class="title">小说数据看板</h2>
 
       <!-- 模式切换 -->
-      <div class="role-tabs">
-        <div
+      <div class="role-tabs" role="tablist">
+        <button
+          type="button"
           class="role-tab"
           :class="{ active: mode === 'login' }"
+          :aria-pressed="mode === 'login'"
+          role="tab"
           @click="switchMode('login')"
-        >登录</div>
-        <div
+        >登录</button>
+        <button
+          type="button"
           class="role-tab"
           :class="{ active: mode === 'register' }"
+          :aria-pressed="mode === 'register'"
+          role="tab"
           @click="switchMode('register')"
-        >注册</div>
+        >注册</button>
       </div>
       <p class="role-desc">
         {{ mode === 'login' ? '已有账号，请输入用户名密码登录' : '新用户注册，注册后自动登录' }}
@@ -22,13 +28,35 @@
 
       <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名（2-32字）" />
+          <el-input
+            v-model="form.username"
+            placeholder="用户名（2-32字）"
+            :autocomplete="mode === 'login' ? 'username' : 'new-username'"
+            :spellcheck="false"
+            name="username"
+          />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码（6-64字）" show-password />
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="密码（6-64字）"
+            show-password
+            :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+            :spellcheck="false"
+            name="password"
+          />
         </el-form-item>
         <el-form-item v-if="mode === 'register'" prop="password2">
-          <el-input v-model="form.password2" type="password" placeholder="确认密码" show-password />
+          <el-input
+            v-model="form.password2"
+            type="password"
+            placeholder="确认密码"
+            show-password
+            autocomplete="new-password"
+            :spellcheck="false"
+            name="password2"
+          />
         </el-form-item>
         <el-button type="primary" native-type="submit" :loading="loading" class="submit">
           {{ mode === 'login' ? '登 录' : '注 册' }}
@@ -147,7 +175,10 @@ const onSubmit = async () => {
   cursor: pointer;
   color: #606266;
   background: #f5f7fa;
-  transition: all 0.2s;
+  border: 0;                          /* 覆盖 button 默认边框 */
+  font-family: inherit;               /* 继承 body 字体 */
+  /* 列表具体属性 - 避免 transition: all 带来的性能/可访问性问题 */
+  transition: background-color 0.2s, color 0.2s;
   font-size: 14px;
   user-select: none;
 }
@@ -159,6 +190,12 @@ const onSubmit = async () => {
 
 .role-tab:first-child {
   border-right: 1px solid #dcdfe6;
+}
+
+/* 焦点环 — 让键盘用户能看到当前焦点位置 */
+.role-tab:focus-visible {
+  outline: 2px solid #409eff;
+  outline-offset: -2px;
 }
 
 .role-desc {

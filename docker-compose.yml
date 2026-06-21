@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ============================================================
   # MySQL 8.0
@@ -60,7 +58,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "-t", "1", "http://localhost:8080/api/sites"]
       interval: 30s
       timeout: 5s
       retries: 5

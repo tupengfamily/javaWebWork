@@ -80,34 +80,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import dayjs from 'dayjs'
 import { dashboardSites } from '@/api/tasks'
 import request from '@/utils/request'
+import { formatNum, formatFullTime } from '@/utils/format'
+import { toQuery, readQuery } from '@/utils/queryState'
+
+const route = useRoute()
+const router = useRouter()
 
 const siteStatus = ref<any[]>([])
 
 const novelLoading = ref(false)
 const novelData = reactive({ records: [] as any[], total: 0, pageNum: 1, pageSize: 20, pages: 0 })
-const novelFilter = reactive({ keyword: '', siteId: null as number | null, pageNum: 1, pageSize: 20 })
+/* 小说筛选 - 优先从 URL 读取 */
+const novelFilter = reactive({
+  keyword: readQuery(route.query, 'kw', '') as string,
+  siteId: readQuery(route.query, 'site', null) as number | null,
+  pageNum: readQuery(route.query, 'page', 1) as number,
+  pageSize: readQuery(route.query, 'size', 20) as number
+})
 const novelSelection = ref<number[]>([])
+
+/* siteId 变化时同步到 URL */
+watch(() => novelFilter.siteId, () => {
+  novelFilter.pageNum = 1
+  router.replace({ query: toQuery({
+    site: novelFilter.siteId,
+    kw: novelFilter.keyword,
+    page: novelFilter.pageNum,
+    size: novelFilter.pageSize,
+  }) })
+})
 
 const recordDialog = reactive({ visible: false, loading: false, novelId: 0, records: [] as any[] })
 
-const formatTime = (t: string | null) => {
-  if (!t) return '-'
-  if (typeof t !== 'string') return String(t)
-  const d = dayjs(t)
-  return d.isValid() ? d.format('MM-DD HH:mm:ss') : t
-}
-
-const formatNum = (n: number) => {
-  if (!n && n !== 0) return '-'
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(1) + '万'
-  return String(n)
-}
+const formatTime = formatFullTime
 
 const fetchSiteStatus = async () => { siteStatus.value = await dashboardSites() }
 

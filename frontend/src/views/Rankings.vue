@@ -7,13 +7,18 @@
         <div class="header-actions">
           <!-- 文字显示切换 -->
           <el-tooltip :content="textWrap ? '切换为单行截断' : '切换为多行显示'">
-            <el-button :icon="textWrap ? 'Memo' : 'Document'" circle size="small"
-              @click="textWrap = !textWrap; saveTablePrefs()" />
+            <el-button
+              :icon="textWrap ? 'Memo' : 'Document'"
+              circle
+              size="small"
+              :aria-label="textWrap ? '切换为单行截断' : '切换为多行显示'"
+              @click="textWrap = !textWrap; saveTablePrefs()"
+            />
           </el-tooltip>
           <!-- 列设置 -->
           <el-popover placement="bottom-end" :width="240" trigger="click">
             <template #reference>
-              <el-button icon="Setting" circle size="small" title="表格列设置" />
+              <el-button icon="Setting" circle size="small" title="表格列设置" aria-label="表格列设置" />
             </template>
             <div class="col-setting">
               <div class="col-setting-title">显示字段</div>
@@ -65,13 +70,23 @@
           <el-table-column v-if="isColVisible('coverUrl')" label="封面" prop="coverUrl"
             :width="colWidths.coverUrl || 70" align="center">
             <template #default="{ row }">
-              <el-image v-if="row.coverUrl" :src="row.coverUrl" style="width: 40px; height: 54px"
-                fit="cover" :preview-src-list="[row.coverUrl]" preview-teleported lazy>
+              <el-image
+                v-if="row.coverUrl"
+                :src="row.coverUrl"
+                width="40"
+                height="54"
+                style="width: 40px; height: 54px"
+                fit="cover"
+                :preview-src-list="[row.coverUrl]"
+                preview-teleported
+                lazy
+                :alt="row.title ? `${row.title} 的封面` : '书籍封面'"
+              >
                 <template #error>
-                  <div class="cover-placeholder">-</div>
+                  <div class="cover-placeholder" aria-hidden="true">-</div>
                 </template>
               </el-image>
-              <span v-else class="cover-placeholder">-</span>
+              <span v-else class="cover-placeholder" aria-hidden="true">-</span>
             </template>
           </el-table-column>
 
@@ -136,12 +151,19 @@
             :width="colWidths.novelUrl || 70" align="center">
             <template #default="{ row }">
               <el-tooltip v-if="row.novelUrl" content="打开原站链接" placement="top">
-                <el-icon class="link-icon" @click.stop="openUrl(row)">
-                  <Link />
-                </el-icon>
+                <button
+                  type="button"
+                  class="link-icon-btn"
+                  :aria-label="`打开《${row.title}》原站链接`"
+                  @click.stop="openUrl(row)"
+                >
+                  <el-icon class="link-icon" aria-hidden="true">
+                    <Link />
+                  </el-icon>
+                </button>
               </el-tooltip>
               <el-tooltip v-else content="暂无详情链接" placement="top">
-                <el-icon class="link-icon-disabled"><Link /></el-icon>
+                <span class="link-icon-disabled" aria-hidden="true"><el-icon><Link /></el-icon></span>
               </el-tooltip>
             </template>
           </el-table-column>
@@ -175,15 +197,18 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listRankings, type RankingItemVO } from '@/api/rankings'
 import { listEnabledSites, type SiteVO } from '@/api/sites'
 import { useMetaStore } from '@/stores/meta'
 import { useAuthStore } from '@/stores/auth'
+import { formatNum, formatShortTime } from '@/utils/format'
+import { toQuery, readQuery } from '@/utils/queryState'
 import dayjs from 'dayjs'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const meta = useMetaStore()
 const tableRef = ref()
@@ -192,13 +217,14 @@ const loading = ref(false)
 const data = reactive<{ records: RankingItemVO[]; total: number; pageNum: number; pageSize: number; pages: number }>({
   records: [], total: 0, pageNum: 1, pageSize: 20, pages: 0
 })
+/* 筛选条件 - 优先从 URL 读取（支持分享链接），否则用默认值 */
 const filters = reactive({
-  site: '' as string,
-  type: 'daily' as string,
-  category: '' as string,
-  keyword: '' as string,
-  pageNum: 1,
-  pageSize: 20
+  site: readQuery(route.query, 'site', '') as string,
+  type: readQuery(route.query, 'type', 'daily') as string,
+  category: readQuery(route.query, 'category', '') as string,
+  keyword: readQuery(route.query, 'keyword', '') as string,
+  pageNum: readQuery(route.query, 'page', 1) as number,
+  pageSize: readQuery(route.query, 'size', 20) as number
 })
 const lastTime = ref('')
 
@@ -293,9 +319,12 @@ const onColResize = (_newWidth: number, _oldWidth: number, column: any) => {
 
 /* ============================================================
  * 记住查询条件
+ * 策略：URL query 是单一真相，刷新即可恢复；localStorage 仅作为"首次访问"时的兜底
  * ============================================================ */
 const FILTERS_KEY = 'rankings:filters'
 const loadSavedFilters = () => {
+  // URL 已带参数时不读取 localStorage，避免覆盖用户的分享链接状态
+  if (route.query && Object.keys(route.query).length > 0) return
   try {
     const raw = localStorage.getItem(FILTERS_KEY)
     if (!raw) return
@@ -310,10 +339,28 @@ const loadSavedFilters = () => {
     }
   } catch { /* ignore */ }
 }
+
+/* 同步 filters 到 URL query - 使用 router.replace 避免污染 history */
+const syncUrl = () => {
+  router.replace({
+    query: toQuery({
+      site: filters.site,
+      type: filters.type,
+      category: filters.category,
+      keyword: filters.keyword,
+      page: filters.pageNum,
+      size: filters.pageSize,
+    }),
+  })
+}
+
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 const saveFilters = () => {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
+    // 1. 同步到 URL (单一真相)
+    syncUrl()
+    // 2. 兼容存 localStorage 作为兜底（仅首次访问有用）
     try {
       localStorage.setItem(FILTERS_KEY, JSON.stringify(filters))
     } catch { /* ignore */ }
@@ -324,16 +371,7 @@ watch(filters, saveFilters, { deep: true })
 /* ============================================================
  * 格式化 & 跳转
  * ============================================================ */
-const formatNum = (n: number) => {
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(1) + '万'
-  return String(n)
-}
-
-const formatTime = (t?: string) => {
-  if (!t) return '-'
-  return dayjs(t).format('MM-DD HH:mm')
-}
+const formatTime = formatShortTime
 
 const openUrl = (row: RankingItemVO) => {
   if (row.novelUrl) {
@@ -479,6 +517,22 @@ onMounted(async () => {
   color: #c0c4cc;
   font-size: 18px;
   cursor: not-allowed;
+}
+
+/* 链接按钮 - 仅保留按钮语义，视觉上与原图标一致 */
+.link-icon-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.link-icon-btn:focus-visible {
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* 封面占位 */

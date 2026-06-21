@@ -125,12 +125,20 @@
 
     <!-- 4. 实时日志（默认折叠，点击展开） -->
     <el-card class="block">
-      <div class="row-between" style="cursor:pointer" @click="showLogs = !showLogs">
+      <div class="row-between">
         <h3>
-          实时日志
-          <span style="font-size:12px;font-weight:normal;color:#909399;margin-left:4px">
-            {{ showLogs ? '▼' : '▶' }}
-          </span>
+          <button
+            type="button"
+            class="log-toggle"
+            :aria-expanded="showLogs"
+            aria-controls="log-stream-region"
+            @click="toggleLogs"
+          >
+            实时日志
+            <span aria-hidden="true" style="font-size:12px;font-weight:normal;color:#909399;margin-left:4px">
+              {{ showLogs ? '▼' : '▶' }}
+            </span>
+          </button>
         </h3>
         <div style="display:flex;gap:8px;align-items:center">
           <el-select v-if="showLogs" v-model="logFilter.level" placeholder="级别" clearable @change="fetchLogs" style="width: 120px">
@@ -138,12 +146,19 @@
             <el-option label="WARN" value="WARN" />
             <el-option label="ERROR" value="ERROR" />
           </el-select>
-          <el-button size="small" @click.stop="showLogs = !showLogs; if(showLogs) fetchLogs()">
+          <el-button size="small" @click.stop="toggleLogs">
             {{ showLogs ? '收起' : '查看日志' }}
           </el-button>
         </div>
       </div>
-      <div v-show="showLogs" class="log-stream">
+      <div
+        v-show="showLogs"
+        id="log-stream-region"
+        class="log-stream"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="实时抓取日志"
+      >
         <div v-for="(l, i) in logs" :key="i" class="log-line" :class="logLevelClass(l.level)">
           <span class="time">{{ formatTime(l.time) }}</span>
           <span class="level">[{{ l.level }}]</span>
@@ -192,7 +207,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import {
@@ -201,7 +217,11 @@ import {
 } from '@/api/tasks'
 import { getSchedule, updateSchedule, type ScheduleConfig } from '@/api/schedule'
 import { useMetaStore } from '@/stores/meta'
+import { formatFullTime } from '@/utils/format'
+import { toQuery, readQuery } from '@/utils/queryState'
 
+const route = useRoute()
+const router = useRouter()
 const meta = useMetaStore()
 const now = ref(dayjs().format('YYYY-MM-DD HH:mm:ss'))
 const siteStatus = ref<any[]>([])
@@ -213,7 +233,19 @@ const taskLoading = ref(false)
 const taskData = reactive<{ records: TaskVO[]; total: number; pageNum: number; pageSize: number; pages: number }>({
   records: [], total: 0, pageNum: 1, pageSize: 20, pages: 0
 })
-const taskFilter = reactive({ status: '', pageNum: 1, pageSize: 20 })
+/* 任务筛选 - 优先从 URL 读取，支持分享筛选链接 */
+const taskFilter = reactive({
+  status: readQuery(route.query, 'status', '') as string,
+  pageNum: readQuery(route.query, 'page', 1) as number,
+  pageSize: readQuery(route.query, 'size', 20) as number
+})
+
+/* 筛选变化时同步到 URL（debounce 由 watch 后的 microtask 合并） */
+watch(() => taskFilter.status, () => {
+  // 状态切换重置分页到第一页
+  taskFilter.pageNum = 1
+  router.replace({ query: toQuery({ status: taskFilter.status, page: taskFilter.pageNum, size: taskFilter.pageSize }) })
+})
 
 const logFilter = reactive({ level: '' })
 const showLogs = ref(false)
@@ -224,12 +256,7 @@ const logDialog = reactive({ visible: false, taskId: 0, logs: [] as any[] })
 
 let timer: any
 
-const formatTime = (t: string | null) => {
-  if (!t) return '-'
-  if (typeof t !== 'string') return String(t)
-  const d = dayjs(t)
-  return d.isValid() ? d.format('MM-DD HH:mm:ss') : t
-}
+const formatTime = formatFullTime
 
 const statusType = (s: string) => {
   switch (s) {
@@ -324,6 +351,12 @@ const viewLog = async (id: number) => {
   logDialog.visible = true
 }
 
+/* 切换实时日志折叠 - 集中处理，避免多处 @click 重复 */
+const toggleLogs = () => {
+  showLogs.value = !showLogs.value
+  if (showLogs.value) fetchLogs()
+}
+
 onMounted(async () => {
   await meta.loadAll()
   await Promise.all([fetchSiteStatus(), fetchSchedule(), fetchTasks()])
@@ -410,6 +443,23 @@ onUnmounted(() => clearInterval(timer))
 .log-error { color: #f48771; }
 
 :deep(.el-progress-bar__innerText) { font-size: 11px; }
+
+/* 实时日志切换按钮 - 还原为与原 h3 相似的视觉，但具备 button 语义 */
+.log-toggle {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.log-toggle:focus-visible {
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
 
 @media (max-width: 576px) {
   .log-stream { max-height: 240px; font-size: 11px; }

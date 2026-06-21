@@ -33,7 +33,6 @@ RANDOMIZE_DOWNLOAD_DELAY = True  # 0.5*delay ~ 1.5*delay
 # 自动限速(根据响应时间动态调整,降低被封概率)
 # rich-crawler-data 引入分页后,启用 AUTOTHROTTLE 进一步保护
 AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_TARGET_CONCURRENCY = 1.5
 AUTOTHROTTLE_DEBUG = False
 
 # 默认请求头(补全浏览器特征)
@@ -89,7 +88,7 @@ DNSCACHE_ENABLED = True
 HTTPCACHE_ENABLED = False
 
 # 自动限速(如果站点返回 429,自动减速)
-AUTOTHROTTLE_ENABLED = True
+# 注：AUTOTHROTTLE_* 配置已合并到上方"自动限速"区块，避免重复定义冲突
 AUTOTHROTTLE_START_DELAY = 1.5
 AUTOTHROTTLE_MAX_DELAY = 10.0
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0

@@ -105,6 +105,8 @@ class Dispatcher:
         (因为 'all' 会展开为这三个,不能同时抓)
         """
         try:
+            # 整个"认领 + 改状态"在一个事务里完成，
+            # 借助 FOR UPDATE 的行锁避免多 Worker 重复认领
             with self.engine.begin() as conn:
                 rows = conn.execute(text("""
                     SELECT t.id, t.site_id, t.ranking_type, t.category, s.code AS site_code
@@ -134,6 +136,8 @@ class Dispatcher:
                     return []
 
                 # 批量更新 status='running' + 记录 worker_id + 启动时间
+                # 注意：再次校验 status='pending' 是防御性写法，
+                # 避免极端情况下（如手动 SQL 修改）把已运行的任务再次拉起
                 ids = [r.id for r in rows]
                 stmt = text("""
                     UPDATE crawl_task
@@ -142,7 +146,7 @@ class Dispatcher:
                 """).bindparams(bindparam("ids", expanding=True))   # expanding=True 启用 IN (...) 展开
                 conn.execute(stmt, {"wid": WORKER_ID, "ids": ids})
 
-                # 写启动日志(每个任务一条)
+                # 写启动日志(每个任务一条)，便于前端"实时日志"立即可见
                 for r in rows:
                     self._write_log(
                         conn, r.id, r.site_id, "INFO",
@@ -314,9 +318,9 @@ class _RunningTask:
     def __init__(self, task_id: int, site_id: int, site_code: str,
                  proc: subprocess.Popen, started_at: datetime,
                  ranking_type: str = "daily"):
-        self.task_id = task_id          # DB 主键
+        self.task_id = task_id          # DB 主键（crawl_task.id）
         self.site_id = site_id          # 冗余存,写日志用
         self.site_code = site_code      # 冗余存,日志显示
         self.ranking_type = ranking_type  # daily/monthly/total/category/all
-        self.proc = proc                # 子进程对象
+        self.proc = proc                # 子进程对象（subprocess.Popen）
         self.started_at = started_at    # 启动时间,用于超时判断

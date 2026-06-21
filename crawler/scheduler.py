@@ -148,6 +148,7 @@ class CrawlScheduler:
                 self.job_ids.append(jid)
                 log.info(f"已注册定时任务: 每天 {t}")
             except Exception as e:
+                # 单个时间点注册失败不应中断整体 reload，下一个时间点继续尝试
                 log.warning(f"注册 {t} 失败: {e}")
 
         self.current_times = new_times

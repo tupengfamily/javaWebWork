@@ -86,7 +86,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { getNovel, getNovelTrend, getNovelRecords, type NovelVO } from '@/api/novels'
-import dayjs from 'dayjs'
+import { formatNum } from '@/utils/format'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -99,12 +99,6 @@ const trend = ref<{ ranking: any[]; viewCount: any[]; recCount: any[] }>({ ranki
 const records = ref<any[]>([])
 const recordsTotal = ref(0)
 const recordsPage = ref(1)
-
-const formatNum = (n: number) => {
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(1) + '万'
-  return String(n)
-}
 
 const baseLineOpt = computed(() => ({
   tooltip: { trigger: 'axis' },
