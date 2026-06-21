@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.novel.rank.common.BusinessException;
 import com.novel.rank.common.ErrorCode;
 import com.novel.rank.common.PageResult;
+import com.novel.rank.entity.Novel;
 import com.novel.rank.entity.RankingRecord;
 import com.novel.rank.mapper.NovelMapper;
 import com.novel.rank.mapper.RankingRecordMapper;
@@ -91,5 +92,26 @@ public class NovelService {
         m.put("time", t);
         m.put("value", v);
         return m;
+    }
+
+    /** 按书名/作者搜索小说（公开，跨站点） */
+    public List<Map<String, Object>> search(String keyword, int limit) {
+        LambdaQueryWrapper<Novel> q = new LambdaQueryWrapper<Novel>()
+                .and(w -> w.like(Novel::getTitle, keyword).or().like(Novel::getAuthor, keyword))
+                .orderByDesc(Novel::getLastCrawlTime)
+                .last("LIMIT " + Math.min(limit, 50));
+        List<Novel> novels = novelMapper.selectList(q);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Novel n : novels) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("novelId", n.getId());
+            m.put("title", n.getTitle());
+            m.put("author", n.getAuthor());
+            m.put("siteId", n.getSiteId());
+            m.put("category", n.getCategory());
+            m.put("coverUrl", n.getCoverUrl());
+            result.add(m);
+        }
+        return result;
     }
 }

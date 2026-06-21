@@ -93,4 +93,14 @@ public class RankingService {
         if (by == null || by.isBlank()) by = "viewCount";
         return rankingMapper.selectCrossSiteTop(limit, by, category);
     }
+
+    /** 全站数据概览 */
+    public List<Map<String, Object>> getOverview() {
+        return rankingMapper.selectSiteOverview();
+    }
+
+    /** 分类热度统计 */
+    public List<Map<String, Object>> getCategoryHeat() {
+        return rankingMapper.selectCategoryHeat();
+    }
 }

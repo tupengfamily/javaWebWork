@@ -49,3 +49,27 @@ export const compareTrend = (params: {
 
 export const topList = (params: { limit?: number; by?: string; category?: string } = {}) =>
   request.get<any, any[]>('/trends/top', { params })
+
+export interface SiteOverviewVO {
+  siteId: number
+  siteCode: string
+  siteName: string
+  color: string
+  novelCount: number
+  recordCount: number
+  lastCrawl: string | null
+}
+
+export interface CategoryHeatVO {
+  category: string
+  novelCount: number
+  avgViewCount: number
+}
+
+export const fetchTrendOverview = () => request.get<any, SiteOverviewVO[]>('/trends/overview')
+
+export const fetchCategoryHeat = () => request.get<any, CategoryHeatVO[]>('/trends/categories')
+
+/** 搜索小说（按书名/作者，跨站点） */
+export const searchNovels = (keyword: string, limit = 20) =>
+  request.get<any, { novelId: number; title: string; author: string; siteId: number; category: string }[]>('/novels/search', { params: { keyword, limit } })

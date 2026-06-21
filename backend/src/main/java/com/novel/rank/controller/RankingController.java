@@ -43,4 +43,16 @@ public class RankingController {
                                                  @RequestParam(required = false) String category) {
         return Result.success(rankingService.topList(limit, by, category));
     }
+
+    /** 全站数据概览（公开） */
+    @GetMapping("/api/trends/overview")
+    public Result<List<Map<String, Object>>> overview() {
+        return Result.success(rankingService.getOverview());
+    }
+
+    /** 分类热度统计（公开） */
+    @GetMapping("/api/trends/categories")
+    public Result<List<Map<String, Object>>> categories() {
+        return Result.success(rankingService.getCategoryHeat());
+    }
 }

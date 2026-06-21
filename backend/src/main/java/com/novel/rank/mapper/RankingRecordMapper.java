@@ -34,4 +34,10 @@ public interface RankingRecordMapper extends BaseMapper<RankingRecord> {
     List<Map<String, Object>> selectCrossSiteTop(@Param("limit") int limit,
                                                  @Param("by") String by,
                                                  @Param("category") String category);
+
+    /** 站点概览统计 */
+    List<Map<String, Object>> selectSiteOverview();
+
+    /** 分类热度统计 */
+    List<Map<String, Object>> selectCategoryHeat();
 }

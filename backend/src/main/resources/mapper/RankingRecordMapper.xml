@@ -99,6 +99,36 @@
         ORDER BY r.crawl_time ASC
     </select>
 
+    <!-- 站点概览: 各站点小说数 + 记录数 + 最新抓取时间 -->
+    <select id="selectSiteOverview" resultType="java.util.Map">
+        SELECT
+            s.id         AS siteId,
+            s.code       AS siteCode,
+            s.name       AS siteName,
+            s.color      AS color,
+            (SELECT COUNT(*) FROM novel n WHERE n.site_id = s.id) AS novelCount,
+            (SELECT COUNT(*) FROM ranking_record r WHERE r.site_id = s.id) AS recordCount,
+            (SELECT MAX(r.crawl_time) FROM ranking_record r WHERE r.site_id = s.id) AS lastCrawl
+        FROM site s
+        WHERE s.enabled = 1
+        ORDER BY s.sort_order
+    </select>
+
+    <!-- 分类热度: 按分类统计小说数 + 平均浏览量 -->
+    <select id="selectCategoryHeat" resultType="java.util.Map">
+        SELECT
+            COALESCE(n.category, '未分类') AS category,
+            COUNT(DISTINCT n.id)           AS novelCount,
+            ROUND(AVG(r.view_count))       AS avgViewCount
+        FROM novel n
+        LEFT JOIN v_latest_rank_snapshot r ON r.novel_id = n.id AND r.rn = 1
+        WHERE n.category IS NOT NULL AND n.category != ''
+        GROUP BY n.category
+        HAVING novelCount >= 1
+        ORDER BY novelCount DESC
+        LIMIT 20
+    </select>
+
     <!-- 跨站 TOP N(基于最新一次 daily 抓取) -->
     <!-- by 可选 viewCount/recCount/rank,默认 viewCount 降序 -->
     <select id="selectCrossSiteTop" resultType="java.util.Map">

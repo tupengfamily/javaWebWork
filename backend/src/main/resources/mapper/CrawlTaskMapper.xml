@@ -51,7 +51,7 @@
     <!-- 仪表盘:最近一次任务(每个站点) -->
     <select id="selectLatestTaskPerSite" resultType="java.util.Map">
         SELECT
-            t.site_id   AS siteId,
+            s.id        AS siteId,
             s.code      AS siteCode,
             s.name      AS siteName,
             s.color     AS color,
@@ -59,7 +59,8 @@
             t.id        AS lastTaskId,
             t.status    AS lastTaskStatus,
             t.finished_at AS lastTaskFinishedAt,
-            t.fetched_count AS lastTaskFetchedCount
+            t.fetched_count AS lastTaskFetchedCount,
+            (SELECT COUNT(*) FROM novel n WHERE n.site_id = s.id) AS novelCount
         FROM site s
         LEFT JOIN (
             SELECT t1.*

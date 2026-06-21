@@ -145,6 +145,57 @@ docker compose down
 docker compose down -v
 ```
 
+## Docker 重新部署指南
+
+代码修改后,根据改动的模块选择对应的重新部署命令:
+
+### 单模块重新部署
+
+| 改动模块 | 命令 | 说明 |
+|---------|------|------|
+| Java 后端代码 | `docker compose up -d --build backend` | 重新打包 JAR 并构建镜像 |
+| Vue 前端代码 | `docker compose up -d --build frontend` | 重新 `npm run build` 并构建 Nginx 镜像 |
+| Python 爬虫代码 | `docker compose up -d --build crawler` | 复制新代码到镜像 |
+| 仅环境变量/docker-compose.yml 配置 | `docker compose up -d` | 不需要重建镜像,只需重新创建容器 |
+
+### 全部重新部署
+
+```bash
+# 重建所有镜像并启动
+docker compose up -d --build
+```
+
+### 数据库重置
+
+```bash
+# 停止所有容器并删除数据卷(清空数据库)
+docker compose down -v
+
+# 重新启动(会自动执行 init.sql 重建表结构和初始数据)
+docker compose up -d --build
+```
+
+### 常用调试命令
+
+```bash
+# 查看各服务日志
+docker compose logs -f backend    # 后端日志
+docker compose logs -f frontend   # 前端日志
+docker compose logs -f crawler    # 爬虫日志
+docker compose logs -f mysql      # 数据库日志
+
+# 进入容器内部排查
+docker exec -it novel-backend sh
+docker exec -it novel-crawler bash
+docker exec -it novel-mysql mysql -uroot -proot123
+
+# 查看容器状态
+docker compose ps
+
+# 重启单个服务(不重建镜像)
+docker compose restart backend
+```
+
 ## License
 
 MIT

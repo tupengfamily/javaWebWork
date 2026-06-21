@@ -44,4 +44,11 @@ public class NovelController {
         }
         return Result.success(novelService.getTrend(id, type, days));
     }
+
+    /** 搜索小说（公开，按书名/作者） */
+    @GetMapping("/search")
+    public Result<List<Map<String, Object>>> search(@RequestParam String keyword,
+                                                     @RequestParam(defaultValue = "20") int limit) {
+        return Result.success(novelService.search(keyword, limit));
+    }
 }
